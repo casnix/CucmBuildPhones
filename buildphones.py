@@ -6,176 +6,217 @@
 # This version grabs CucmAXL from github; you can download that library direct
 # and import it locally if needed.
 
-import urllib3
+import csv
 import asyncio
+import urllib3
+import argparse
 import datetime
 import requests
+import Namespace
 
-def githubImport(user, repo, module):
+# Import from github
+def githubImport(user: str, repo: str, module: str):
+    """
+    Dynamicaly import a module from a remote github repo.
+
+    THIS IS A SECURITY RISK AND IS UNSAFE. 
+    PLEASE ONLY DO THIS IF YOU TRUST THE REMOTE REPO.
+    THIS IS INCLUDED FOR DEMO PURPOSES; I RECOMMEND ADDING THE IMPORTED MODULES
+    DIRECTLY ON YOUR LOCAL FILESYSTEM.
+    """
     data = {}
-    url = 'https://raw.githubusercontent.com/{}/{}/master/{}.py'.format(
+    url: str = 'https://raw.githubusercontent.com/{}/{}/master/{}.py'.format(
         user,
         repo,
         module
     )
 
-    r = requests.get(url).text
-    exec(r, data)
+    print(f"[githubImport] Attempting to grab {module} for import from {url}")
+
+    try:
+        r = requests.get(url).text
+        exec(r, data)
+    except Exception as e:
+        print(f"[githubimport] Failed to grab {module} from {url}.")
+        print(f"[githubImport] Reason: {type(e).__name__}: {e}")
 
 githubImport('casnix', 'CucmAXL', 'CucmAXL')
+
+# Typehint classes imported from github
+CucmAXL = classmethod
 
 # Suppress SSL warnings (use proper certs in production)
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-# ── Configuration ─────────────────────────────────────────────────────────────
+def addPhones(ccm: CucmAXL, phones: list) -> None:
+    """
+    Iterate through `phones` and add a phone per each to CUCM.
+    """
+    for thisPhone in phones:
+        ccm.addPhone(phone={**thisPhone})
 
-CUCM_HOST     = "192.168.1.10"          # Your CUCM publisher IP or hostname
-CUCM_VERSION  = "14.0"                  # AXL schema version (match your CUCM)
-AXL_USERNAME  = "axladmin"
-AXL_PASSWORD  = "yourpassword"
+def addLines(ccm: CucmAXL, lines: list) -> None:
+    """
+    Iterate through `lines` and add a line per each to CUCM.
+    """
+    for thisLine in lines:
+        try:
+            ccm.addLine(line = {**thisLine})
+        except Exception as e:
+            if (
+                "already exists" in str(e).lower() \
+                    or "duplicate" in str(e).lower()
+            ):
+                print(
+                    f"[~] DN {thisLine['pattern']} already exists, "+
+                      "will reuse it"
+                )
+            else:
+                raise
 
-WSDL_PATH     = f"schema/AXLAPI.wsdl"   # Download from CUCM: /plugins/axlsqltoolkit.zip
-AXL_URL       = f"https://{CUCM_HOST}:8443/axl/"
+def renderCSV(data: list) -> tuple[list, list]:
+    """
+    Separate the source table into two arrays of lists.
+    The first array will have data relevant to the addPhone method referenced
+     by the CucmAXL object in the main logic.
+    The secod array will have data relevant to the addLine method referenced
+     by the CucmAXL object in the main logic.
+    """
+    data.pop(0) # Remove table header
 
-# ── Phone / Line Settings ─────────────────────────────────────────────────────
-
-PHONE_CONFIG = {
-    "name":          "SEP001122334455",   # Must match MAC: SEP + MAC (uppercase, no colons)
-    "description":   "John Doe - Desk",
-    "product":       "Cisco 8861",        # Product model name (exactly as in CUCM)
-    "model":         "Cisco 8861",
-    "class":         "Phone",
-    "protocol":      "SIP",
-    "protocolSide":  "User",
-    "devicePoolName":         "Default",
-    "locationName":           "Hub_None",
-    "commonPhoneConfigName":  "Standard Common Phone Profile",
-    "phoneTemplateName":      "Standard 8861 SIP",
-    "useTrustedRelayPoint":   "Default",
-    "builtInBridgeStatus":    "Default",
-    "packetCaptureMode":      "None",
-    "certificateOperation":   "No Pending Operation",
-    "deviceMobilityMode":     "Default",
-}
-
-LINE_CONFIG = {
-    "pattern":          "1001",          # Extension / DN
-    "routePartitionName": "Internal_PT", # Partition (or None for <None>)
-    "description":      "John Doe",
-    "alertingName":     "John Doe",
-    "asciiAlertingName": "John Doe",
-    "voiceMailProfileName": "NoVoiceMail",
-    "shareLineAppearanceCssName": None,
-}
-
-LINE_APPEARANCE = {                      # How the line appears on the phone button
-    "index":         1,
-    "label":         "John Doe",
-    "display":       "John Doe",
-    "displayAscii":  "John Doe",
-    "e164Mask":      None,
-    "maxNumCalls":   2,
-    "busyTrigger":   1,
-}
-
-
-# ── AXL Client Setup ──────────────────────────────────────────────────────────
-
-def get_axl_client():
-    session = Session()
-    session.verify   = False             # Set to CA bundle path in production
-    session.auth     = HTTPBasicAuth(AXL_USERNAME, AXL_PASSWORD)
-
-    transport = Transport(
-        session=session,
-        timeout=30,
-        cache=SqliteCache()
-    )
-
-    history = HistoryPlugin()
-
-    client = Client(
-        wsdl=WSDL_PATH,
-        transport=transport,
-        plugins=[history]
-    )
-
-    # Bind to the correct service/port with the real CUCM URL
-    service = client.create_service(
-        "{http://www.cisco.com/AXLAPIService/}AXLAPIBinding",
-        AXL_URL
-    )
-
-    return service, history
-
-
-# ── Helper: Add or Get DN ─────────────────────────────────────────────────────
-
-def add_line(service):
-    """Add a Directory Number (DN/extension). Skips if it already exists."""
-    try:
-        result = service.addLine(line={
-            "pattern":              LINE_CONFIG["pattern"],
-            "routePartitionName":   LINE_CONFIG["routePartitionName"],
-            "description":          LINE_CONFIG["description"],
-            "alertingName":         LINE_CONFIG["alertingName"],
-            "asciiAlertingName":    LINE_CONFIG["asciiAlertingName"],
-            "voiceMailProfileName": LINE_CONFIG["voiceMailProfileName"],
+    _deviceConfig = []
+    _lineConfig = []
+    _lineAppearance = []
+    for index in enumerate(data):
+        _lineConfig.append({
+            "pattern": data[index]["linePattern"],
+            "routePartitionName": data[index]["routePartition"],
+            "description": data[index]["description"],
+            "alertingName": data[index]["alertingName"],
+            "asciiAlertingName": data[index]["asciiAlertingName"],
+            "voiceMailProfileName": data[index]["vmProfile"],
+            "shareLineAppearanceCssName": data[index]["callingSearchSpace"]
         })
-        print(f"[✓] Added DN: {LINE_CONFIG['pattern']}")
-        return result
-    except Exception as e:
-        if "already exists" in str(e).lower() or "duplicate" in str(e).lower():
-            print(f"[~] DN {LINE_CONFIG['pattern']} already exists — will reuse it.")
-        else:
-            raise
 
-
-# ── Helper: Add Phone ─────────────────────────────────────────────────────────
-
-def add_phone(service):
-    """Add a phone and associate the line in one call."""
-
-    lines_payload = {
-        "line": [
-            {
-                "index":          LINE_APPEARANCE["index"],
-                "label":          LINE_APPEARANCE["label"],
-                "display":        LINE_APPEARANCE["display"],
-                "displayAscii":   LINE_APPEARANCE["displayAscii"],
-                "e164Mask":       LINE_APPEARANCE["e164Mask"],
-                "maxNumCalls":    LINE_APPEARANCE["maxNumCalls"],
-                "busyTrigger":    LINE_APPEARANCE["busyTrigger"],
-                "dirn": {
-                    "pattern":            LINE_CONFIG["pattern"],
-                    "routePartitionName": LINE_CONFIG["routePartitionName"],
-                },
+        _lineAppearance.append({
+            "index": int(data[index]["index"]),
+            "label": data[index]["label"],
+            "display": data[index]["display"],
+            "displayAscii": data[index]["displayAscii"],
+            "e164Mask": data[index]["e164Mask"],
+            "maxNumCalls": int(data[index]["maxNumCalls"]),
+            "busyTrigger": int(data[index]["busyTrigger"]),
+            "dirn": {
+                "pattern": _lineConfig[index]["pattern"],
+                "routePartitionName": _lineConfig[index]["routePartitionName"]
             }
-        ]
+        })
+
+        _deviceConfig.append({
+            "name": data[index]["devName"],
+            "description": data[index]["desc"],
+            "product": data[index]["devType"],
+            "model": data[index]["devModel"],
+            "class": data[index]["devClass"],
+            "protocol": data[index]["protocol"],
+            "protocolSide": data[index]["protocolSide"],
+            "devicePoolName": data[index]["devicePool"],
+            "locationName": data[index]["loc"],
+            "commonPhoneConfigName": data[index]["commonConfig"],
+            "phoneTemplateName": data[index]["phoneTemplate"],
+            "useTrustedRelayPoint": data[index]["useRelay"],
+            "builtInBridgeStatus": data[index]["bridgeStatus"],
+            "packetCaptureMode": data[index]["packetCap"],
+            "certificateOperation": data[index]["certOp"],
+            "deviceMobilityMode": data[index]["devMobility"],
+            "lines": {
+                "line": [{**_lineAppearance}]
+            }
+        })
+
+    return (_deviceConfig, _lineConfig)
+
+def parseARGV() -> Namespace:
+    """
+    Glean CSV source from command line arguments.
+    """
+    parser = argparse.ArgumentParser()
+    sourceArgs = ('-c', '--csv-file')
+    sourceArgsOpts = {
+        "help": 'Source CSV file to read phone and line table from.',
+        "type": str,
+        "default": "source.csv",
+        "dest": 'sourceFile'
+    }
+    
+    serverArgs = ('-t', '--server')
+    serverArgsOpts = {
+        "help": "Target CCM server",
+        "type": str,
+        "dest": 'ccmServer',
+        "required": True
+    }
+    
+    wsdlArgs = ('-x', '--wsdl-source')
+    wsdlArgsOpts = {
+        "help": 'Path to the WSDL file defining the API',
+        "type": str,
+        "default": "AXLAPI.wsdl",
+        "dest": 'wsdlSource',
+        "required": True
+    }
+    
+    passwordArgs = ('-p', '--password')
+    passwordArgsOpts = {
+        "help": "Password for standard AXL user",
+        "type": str,
+        "dest": 'axlPassword',
+        "required": True
     }
 
-    phone_payload = {**PHONE_CONFIG, "lines": lines_payload}
+    userArgs = ('-u', '--user')
+    userArgsOpts = {
+        "help": "Username for standard AXL user",
+        "type": str,
+        "dest": 'axlUser',
+        "required": True
+    }
 
-    result = service.addPhone(phone=phone_payload)
-    print(f"[✓] Added phone: {PHONE_CONFIG['name']}")
-    print(f"    UUID: {result['return']}")
-    return result
+    parser.add_argument(*sourceArgs, **sourceArgsOpts)
+    parser.add_argument(*serverArgs, **serverArgsOpts)
+    parser.add_argument(*wsdlArgs, **wsdlArgsOpts)
+    parser.add_argument(*passwordArgs, **passwordArgsOpts)
+    parser.add_argument(*userArgs, **userArgsOpts)
 
+    return parser.parse_args()
 
-# ── Main ──────────────────────────────────────────────────────────────────────
+def main() -> None:
+    """
+    Application logic steps:
+        1) Parse command line arguments
+        2) Parse CSV into arrays of dicts
+        3) Open a client to the CUCM server and build the phones
+    """
+    argv: Namespace = parseARGV()
+    with open(argv.sourceFile, newline='') as f:
+        reader = csv.DictReader(f)
+        sourceData = list(reader)
 
-def main():
-    print("Connecting to CUCM AXL API...")
-    service, history = get_axl_client()
+    phoneConfigs: list[dict[str, str | list]]
+    lineConfigs: list[dict[str, str]]
+    (phoneConfigs, lineConfigs) = renderCSV(sourceData)
 
-    # Step 1: Ensure the DN exists
-    add_line(service)
+    axlClientProfile = (
+        argv.wsdlSource,
+        argv.axlUser,
+        argv.axlPassword,
+        argv.ccmServer
+    )
 
-    # Step 2: Add the phone with the line assigned
-    add_phone(service)
+    CUCM = CucmAXL(*axlClientProfile)
 
-    print("\nDone! The phone has been added and the extension assigned.")
-
+    addLines(CUCM, lineConfigs)
+    addPhones(CUCM, phoneConfigs)
 
 if __name__ == "__main__":
     main()
