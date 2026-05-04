@@ -1,10 +1,6 @@
-# buildphones.py
-# Copyright Matt Rienzo (C) 2026
-# Builds several phones in Cisco Unified Communications Manager (CUCM) based
-# on a CSV.
-#
-# This version grabs CucmAXL from github; you can download that library direct
-# and import it locally if needed.
+# Some of this is AI so I can skip the long research into the SOAP API for CUCM
+# to find all of the required fields.  Some of this is my own code to flush out
+# some logic.
 
 import urllib3
 import asyncio

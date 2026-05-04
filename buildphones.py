@@ -7,6 +7,7 @@
 # and import it locally if needed.
 
 import csv
+import sys
 import asyncio
 import urllib3
 import argparse
@@ -14,10 +15,47 @@ import datetime
 import requests
 import Namespace
 
+##########################################
+### Module versioning for my convention###
+##########################################
+class _MODULE__buildphones():
+    _Version = "0.1.0-alpha"
+    _VersionNum = "0.1.0.0"
+    _VersionTuple = (0, 1, 0, 0)
+
+    @classmethod
+    def Version(cls) -> str:
+        return cls._Version
+    
+    @classmethod
+    def VersionNum(cls) -> str:
+        return cls._VersionNum
+    
+    @classmethod
+    def VersionTuple(cls) -> tuple[int, int, int, int]:
+        return cls._VersionTuple
+    
+
+###############################################################################
+### Dynamic Github imports and checks methods blocks                        ###
+###############################################################################
+### For not locally installed modules.                                      ###
+###                                                                         ###
+### THIS CAN INTRODUCE CODE/VARIABLE INSTABILITY IF MULTIPLE MODULES USE    ###
+### THE SAME NAMED GLOBAL VARIABLES, METHODS, ETC.                          ###
+###                                                                         ###
+### THIS IS A SECURITY RISK AND IS UNSAFE.                                  ###
+### PLEASE ONLY DO THIS IF YOU TRUST THE REMOTE REPO.                       ###
+### THIS IS INCLUDED FOR DEMO PURPOSES; I RECOMMEND ADDING THE IMPORTED     ###
+### MODULES DIRECTLY ON YOUR LOCAL FILESYSTEM.                              ###
+###############################################################################
+
 # Import from github
-def githubImport(user: str, repo: str, module: str):
+def githubImport(user: str, repo: str, module: str, tag: str = "master") -> None:
     """
-    Dynamicaly import a module from a remote github repo.
+    Dynamicaly import a module from a remote github repo.  THIS CAN INTRODUCE
+    CODE/VARIABLE INSTABILITY IF MULTIPLE MODULES USE THE SAME NAMED GLOBAL
+    VARIABLES, METHODS, ETC.
 
     THIS IS A SECURITY RISK AND IS UNSAFE. 
     PLEASE ONLY DO THIS IF YOU TRUST THE REMOTE REPO.
@@ -25,9 +63,10 @@ def githubImport(user: str, repo: str, module: str):
     DIRECTLY ON YOUR LOCAL FILESYSTEM.
     """
     data = {}
-    url: str = 'https://raw.githubusercontent.com/{}/{}/master/{}.py'.format(
+    url: str = 'https://raw.githubusercontent.com/{}/{}/{}/{}.py'.format(
         user,
         repo,
+        tag,
         module
     )
 
@@ -40,7 +79,65 @@ def githubImport(user: str, repo: str, module: str):
         print(f"[githubimport] Failed to grab {module} from {url}.")
         print(f"[githubImport] Reason: {type(e).__name__}: {e}")
 
-githubImport('casnix', 'CucmAXL', 'CucmAXL')
+def moduleFailVerCheck(
+        moduleName: str, 
+        minimumVersion: tuple[int, int, int, int],
+        hardFail: bool = True,
+        printOut: bool = True
+    ) -> bool:
+    """ 
+    Check if a github imported module is above or equal to the minimum version
+    specified in the arguments.  To prevent printing the result to the console,
+    set `printOut` to false.  To do a soft check and continue execution of the 
+    script despite failing the version check, set `hardFail` to false.
+
+    The version variable expects a tuple in format of
+    (MAJOR, MINOR, PATCH, RELEASE)
+
+    Function will kill the script on a hard fail, return True on soft fail, and
+    return False if it passes.
+    """
+    mangled = "_MODULE__"+moduleName
+    modVersion: tuple[int, int, int, int] = globals()[mangled].VersionTuple()
+
+    # magic will be set to:
+    # 0 - pass
+    # 1 - fail, hard check
+    # 2 - fail, soft check
+    magic = 0
+
+    magic = 1 if modVersion < minimumVersion and hardFail else magic = 0
+    magic = 2 if modVersion < minimumVersion and not hardFail else magic = 0
+
+    print(
+        f"{moduleName} is below required version. Minimum version is"+ 
+        f"{minimumVersion}, but found {modVersion}"
+    ) if magic > 0 and printOut else magic = 0
+
+    returnCode = False
+    sys.exit(1) if magic == 1 else returnCode = False
+    returnCode = True if magic == 2 else returnCode = False
+
+    return returnCode
+
+####################################################################
+### Module tuple block                                           ###
+####################################################################
+# Formatted this way with the tuple expansion for the purpose of ###
+# readability in the case of multiple remote imports.            ###
+####################################################################
+IMPORT_CucmAXL = ('casnix', 'CucmAXL', 'CucmAXL', 'latest')
+
+#########################
+### Import call block ###
+#########################
+githubImport(*IMPORT_CucmAXL)
+
+##################################
+### Module version check block ###
+##################################
+moduleFailVerCheck("CucmAXL", (0, 1, 0, 0))
+
 
 # Typehint classes imported from github
 CucmAXL = classmethod
