@@ -223,7 +223,8 @@ def serializeCSV(data: list) -> tuple[list, list]:
     _deviceConfig = []
     _lineConfig = []
     _lineAppearance = []
-    for index in enumerate(data):
+    for enum in enumerate(data):
+        index = enum[0]
         _lineConfig.append({
             "pattern": data[index]["linePattern"],
             "routePartitionName": data[index]["routePartition"],
