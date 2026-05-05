@@ -16,6 +16,8 @@ import datetime
 import requests
 import namespace
 
+from pprint import pprint
+
 ##########################################
 ### Module versioning for my convention###
 ##########################################
@@ -63,7 +65,13 @@ class _MODULE__buildphones():
 ###############################################################################
 
 # Import from github
-def githubImport(user: str, repo: str, module: str, tag: str = "master") -> None:
+def githubImport(
+        user: str,
+        repo: str, 
+        module: str, 
+        tag: str = "master",
+        printOut: bool = False
+        ) -> None:
     """
     Dynamicaly import a module from a remote github repo.  THIS CAN INTRODUCE
     CODE/VARIABLE INSTABILITY IF MULTIPLE MODULES USE THE SAME NAMED GLOBAL
@@ -82,14 +90,22 @@ def githubImport(user: str, repo: str, module: str, tag: str = "master") -> None
         module
     )
 
-    print(f"[githubImport] Attempting to grab {module} for import from {url}")
+    print(
+        f"[githubImport] Attempting to grab {module} for import from {url}"
+    ) if printOut else next
 
     try:
         r = requests.get(url).text
         exec(r, globals())
     except Exception as e:
-        print(f"[githubimport] Failed to grab {module} from {url}.")
-        print(f"[githubImport] Reason: {type(e).__name__}: {e}")
+        print(
+            f"[githubimport] Failed to grab {module} from {url}."
+        ) if printOut else next
+        print(
+            f"[githubImport] Reason: {type(e).__name__}: {e}"
+        ) if printOut else next
+
+        raise
 
 def moduleFailVerCheck(
         moduleName: str, 
@@ -148,7 +164,12 @@ VERSION_CucmAXL = (0, 1, 0, 0)
 #########################
 ### Import call block ###
 #########################
-githubImport(*IMPORT_CucmAXL)
+try:
+    githubImport(*IMPORT_CucmAXL)
+
+except:
+    sys.exit(1)
+
 
 ##################################
 ### Module version check block ###
@@ -281,7 +302,6 @@ def parseARGV() -> namespace:
         "help": "Target CCM server",
         "type": str,
         "dest": 'ccmServer',
-        "required": True
     }
     
     wsdlArgs = ('-x', '--wsdl-source')
@@ -290,7 +310,6 @@ def parseARGV() -> namespace:
         "type": str,
         "default": "AXLAPI.wsdl",
         "dest": 'wsdlSource',
-        "required": True
     }
     
     passwordArgs = ('-p', '--password')
@@ -298,7 +317,6 @@ def parseARGV() -> namespace:
         "help": "Password for standard AXL user",
         "type": str,
         "dest": 'axlPassword',
-        "required": True
     }
 
     userArgs = ('-u', '--user')
@@ -306,7 +324,6 @@ def parseARGV() -> namespace:
         "help": "Username for standard AXL user",
         "type": str,
         "dest": 'axlUser',
-        "required": True
     }
 
     versionArgs = ('-v', '--version')
@@ -339,6 +356,52 @@ def parseARGV() -> namespace:
     parser.add_argument(*debugArgs, **debugArgsOpts)
     parser.add_argument(*verboseArgs, **verboseArgsOpts)
 
+    withSourceFile: bool = parser.sourceFile and (
+        not parser.ccmServer
+        or not parser.axlPassword 
+        or not parser.axlUser 
+        or not parser.wsdlSource
+    )
+
+    withCCMServer: bool = parser.ccmServer and (
+        not parser.axlPassword 
+        or not parser.axlUser 
+        or not parser.wsdlSource
+    )
+
+    withAXLPassword: bool = parser.axlPassword and (
+        not parser.ccmServer 
+        or not parser.axlUser 
+        or not parser.wsdlSource
+    )
+
+    withAXLUser: bool = parser.axlUser and (
+        not parser.axlPassword 
+        or not parser.ccmServer 
+        or not parser.wsdlSource
+    )
+
+    withWSDLSource: bool = parser.wsdlSource and (
+        parser.axlPassword 
+        or not parser.axlUser 
+        or not parser.ccmServer
+    )
+
+    if (
+        withSourceFile
+        or withCCMServer
+        or withAXLPassword
+        or withAXLUser
+        or withWSDLSource
+        ):
+        print(
+            "Options error!"
+            "These options must be used together: -t & -x & -p & -u\n"
+            "This is true also if -c is used.\n"
+            "For more information, use --help\n"
+        )
+        sys.exit(2)
+
     return parser.parse_args()
 
 def main() -> None:
@@ -363,7 +426,7 @@ def main() -> None:
             print(
                 "[D] JSON dump of list[dict] sourceData:"
             ) if argv.debug else next
-            print(json.dumps(sourceData)) if argv.debug else next
+            pprint(json.dumps(sourceData)) if argv.debug else next
 
     except Exception as e:
         print(f"[x] Failed to open {argv.sourceFile}.")
@@ -381,13 +444,13 @@ def main() -> None:
             "[D] JSON dump of list[dict] phoneConfigs:"
         ) if argv.debug else next
 
-        print(json.dumps(phoneConfigs)) if argv.debug else next
+        pprint(json.dumps(phoneConfigs)) if argv.debug else next
         
         print(
             "[D] JSON dump of list[dict] lineConfigs"
         ) if argv.debug else next
 
-        print(json.dumps(lineConfigs)) if argv.debug else next
+        pprint(json.dumps(lineConfigs)) if argv.debug else next
     
     except Exception as e:
         print("[x] Failed to serialize CSV data.")
