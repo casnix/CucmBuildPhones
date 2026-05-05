@@ -219,7 +219,7 @@ def serializeCSV(data: list, debug: bool = False) -> tuple[list, list]:
     """
     _deviceConfig = []
     _lineConfig = []
-    _lineAppearance = []
+    _lineAppearance: dict
     for enum in enumerate(data):
         index = enum[0]
         print(
@@ -245,9 +245,9 @@ def serializeCSV(data: list, debug: bool = False) -> tuple[list, list]:
         pprint(_lineConfig[index]) if debug else next
 
         print(
-            f"[D] serializeCSV() - Setting _lineAppearance[{index}]"
+            f"[D] serializeCSV() - Setting _lineAppearance"
         ) if debug else next
-        _lineAppearance.append({
+        _lineAppearance = {
             "index": int(data[index]["index"]),
             "label": data[index]["label"],
             "display": data[index]["display"],
@@ -259,11 +259,11 @@ def serializeCSV(data: list, debug: bool = False) -> tuple[list, list]:
                 "pattern": _lineConfig[index]["pattern"],
                 "routePartitionName": _lineConfig[index]["routePartitionName"]
             }
-        })
+        }
         print(
-            f"[D] serializeCSV() - Dump of _lineAppearance[{index}]:"
+            f"[D] serializeCSV() - Dump of _lineAppearance:"
         ) if debug else next
-        pprint(_lineAppearance[index]) if debug else next
+        pprint(_lineAppearance) if debug else next
 
         print(
             f"[D] serializeCSV() - Setting _deviceConfig[{index}]"
