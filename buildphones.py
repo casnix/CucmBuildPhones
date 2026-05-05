@@ -8,7 +8,6 @@
 
 import csv
 import sys
-import json
 import asyncio
 import urllib3
 import argparse
@@ -293,6 +292,55 @@ def printVersion() -> None:
 
     sys.exit(0)
 
+def handleInclusiveArgs(parser: namespace) -> None:
+    withSourceFile: bool = parser.sourceFile and (
+        not parser.ccmServer
+        or not parser.axlPassword 
+        or not parser.axlUser 
+        or not parser.wsdlSource
+    )
+
+    withCCMServer: bool = parser.ccmServer and (
+        not parser.axlPassword 
+        or not parser.axlUser 
+        or not parser.wsdlSource
+    )
+
+    withAXLPassword: bool = parser.axlPassword and (
+        not parser.ccmServer 
+        or not parser.axlUser 
+        or not parser.wsdlSource
+    )
+
+    withAXLUser: bool = parser.axlUser and (
+        not parser.axlPassword 
+        or not parser.ccmServer 
+        or not parser.wsdlSource
+    )
+
+    withWSDLSource: bool = parser.wsdlSource and (
+        parser.axlPassword 
+        or not parser.axlUser 
+        or not parser.ccmServer
+    )
+
+    if (
+        withSourceFile
+        or withCCMServer
+        or withAXLPassword
+        or withAXLUser
+        or withWSDLSource
+        ):
+        print(
+            "Options error!"
+            "These options must be used together: -t & -x & -p & -u\n"
+            "This is true also if -c is used.\n"
+            "For more information, use --help\n"
+        )
+        sys.exit(2)
+    
+    return
+
 def parseARGV() -> namespace:
     """
     Glean CSV source from command line arguments.
@@ -365,52 +413,6 @@ def parseARGV() -> namespace:
     parser.add_argument(*debugArgs, **debugArgsOpts)
     parser.add_argument(*verboseArgs, **verboseArgsOpts)
 
-    withSourceFile: bool = parser.sourceFile and (
-        not parser.ccmServer
-        or not parser.axlPassword 
-        or not parser.axlUser 
-        or not parser.wsdlSource
-    )
-
-    withCCMServer: bool = parser.ccmServer and (
-        not parser.axlPassword 
-        or not parser.axlUser 
-        or not parser.wsdlSource
-    )
-
-    withAXLPassword: bool = parser.axlPassword and (
-        not parser.ccmServer 
-        or not parser.axlUser 
-        or not parser.wsdlSource
-    )
-
-    withAXLUser: bool = parser.axlUser and (
-        not parser.axlPassword 
-        or not parser.ccmServer 
-        or not parser.wsdlSource
-    )
-
-    withWSDLSource: bool = parser.wsdlSource and (
-        parser.axlPassword 
-        or not parser.axlUser 
-        or not parser.ccmServer
-    )
-
-    if (
-        withSourceFile
-        or withCCMServer
-        or withAXLPassword
-        or withAXLUser
-        or withWSDLSource
-        ):
-        print(
-            "Options error!"
-            "These options must be used together: -t & -x & -p & -u\n"
-            "This is true also if -c is used.\n"
-            "For more information, use --help\n"
-        )
-        sys.exit(2)
-
     return parser.parse_args()
 
 def main() -> None:
@@ -421,6 +423,7 @@ def main() -> None:
         3) Open a client to the CUCM server and build the phones
     """
     argv: namespace = parseARGV()
+    handleInclusiveArgs(argv)
     printVersion() if argv.printVersion else next
     argv.verbose = True if argv.debug else next
 
@@ -480,8 +483,8 @@ def main() -> None:
     print("[D] \tccmServer") if argv.debug else next
     print("[D] )") if argv.debug else next
     print()
-    print("[D] JSON dump of list axlClientProfile:") if argv.debug else next
-    print(json.dumps(axlClientProfile)) if argv.debug else next
+    print("[D] Dump of list axlClientProfile:") if argv.debug else next
+    print(axlClientProfile) if argv.debug else next
 
     try:
         print(
