@@ -218,7 +218,11 @@ def serializeCSV(data: list, debug: bool = False) -> tuple[list, list]:
     The secod array will have data relevant to the addLine method referenced
      by the CucmAXL object in the main logic.
     """
-    data.pop(0) # Remove table header
+    poppedData = data.pop(0) # Remove table header
+    print(
+        "[D] serializedCSV() - Popped data from data.pop(0):"
+    ) if debug else next
+    pprint(poppedData) if debug else next
 
     _deviceConfig = []
     _lineConfig = []
@@ -429,9 +433,9 @@ def main() -> None:
                 "[D] main() - After CSV source read"
             ) if argv.debug else next
             print(
-                "[D] JSON dump of list[dict] sourceData:"
+                "[D] Dump of list[dict] sourceData:"
             ) if argv.debug else next
-            pprint(json.dumps(sourceData)) if argv.debug else next
+            pprint(sourceData) if argv.debug else next
 
     except Exception as e:
         print(f"[x] Failed to open {argv.sourceFile}.")
@@ -446,16 +450,16 @@ def main() -> None:
         (phoneConfigs, lineConfigs) = serializeCSV(sourceData, argv.debug)
         print("[D] main() - After serializeCSV call") if argv.debug else next
         print(
-            "[D] JSON dump of list[dict] phoneConfigs:"
+            "[D] Dump of list[dict] phoneConfigs:"
         ) if argv.debug else next
 
-        pprint(json.dumps(phoneConfigs)) if argv.debug else next
+        pprint(phoneConfigs) if argv.debug else next
         
         print(
-            "[D] JSON dump of list[dict] lineConfigs"
+            "[D] Dump of list[dict] lineConfigs"
         ) if argv.debug else next
 
-        pprint(json.dumps(lineConfigs)) if argv.debug else next
+        pprint(lineConfigs) if argv.debug else next
     
     except Exception as e:
         print("[x] Failed to serialize CSV data.")
