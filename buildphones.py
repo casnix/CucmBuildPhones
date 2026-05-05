@@ -14,7 +14,7 @@ import urllib3
 import argparse
 import datetime
 import requests
-import Namespace
+import namespace
 
 ##########################################
 ### Module versioning for my convention###
@@ -86,7 +86,7 @@ def githubImport(user: str, repo: str, module: str, tag: str = "master") -> None
 
     try:
         r = requests.get(url).text
-        exec(r, data)
+        exec(r, globals())
     except Exception as e:
         print(f"[githubimport] Failed to grab {module} from {url}.")
         print(f"[githubImport] Reason: {type(e).__name__}: {e}")
@@ -118,17 +118,17 @@ def moduleFailVerCheck(
     # 2 - fail, soft check
     magic = 0
 
-    magic = 1 if modVersion < minimumVersion and hardFail else magic = 0
-    magic = 2 if modVersion < minimumVersion and not hardFail else magic = 0
+    magic = 1 if modVersion < minimumVersion and hardFail else magic
+    magic = 2 if modVersion < minimumVersion and not hardFail else magic
 
     print(
-        f"{moduleName} is below required version. Minimum version is"+ 
+        f"{moduleName} is below required version. Minimum version is " + 
         f"{minimumVersion}, but found {modVersion}"
-    ) if magic > 0 and printOut else magic = 0
+    ) if magic > 0 and printOut else next
 
     returnCode = False
-    sys.exit(1) if magic == 1 else returnCode = False
-    returnCode = True if magic == 2 else returnCode = False
+    sys.exit(1) if magic == 1 else next
+    returnCode = True if magic == 2 else False
 
     return returnCode
 
