@@ -264,7 +264,7 @@ def serializeCSV(data: list, debug: bool = False) -> tuple[list, list]:
             "class": data[index]["devClass"],
             "protocol": data[index]["protocol"],
             "protocolSide": data[index]["protocolSide"],
-            "devicePoolName": data[index]["devicePool"],
+            "devicePoolName": data[index]["devPool"],
             "locationName": data[index]["loc"],
             "commonPhoneConfigName": data[index]["commonConfig"],
             "phoneTemplateName": data[index]["phoneTemplate"],
