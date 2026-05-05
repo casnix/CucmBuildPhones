@@ -263,7 +263,7 @@ def printVersion() -> None:
 
     sys.exit(0)
 
-def parseARGV() -> Namespace:
+def parseARGV() -> namespace:
     """
     Glean CSV source from command line arguments.
     """
@@ -348,7 +348,7 @@ def main() -> None:
         2) Parse CSV into arrays of dicts
         3) Open a client to the CUCM server and build the phones
     """
-    argv: Namespace = parseARGV()
+    argv: namespace = parseARGV()
     printVersion() if argv.printVersion else next
     argv.verbose = True if argv.debug else next
 
