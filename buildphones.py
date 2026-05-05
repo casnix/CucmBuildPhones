@@ -217,12 +217,6 @@ def serializeCSV(data: list, debug: bool = False) -> tuple[list, list]:
     The secod array will have data relevant to the addLine method referenced
      by the CucmAXL object in the main logic.
     """
-    poppedData = data.pop(0) # Remove table header
-    print(
-        "[D] serializedCSV() - Popped data from data.pop(0):"
-    ) if debug else next
-    pprint(poppedData) if debug else next
-
     _deviceConfig = []
     _lineConfig = []
     _lineAppearance = []
