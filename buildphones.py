@@ -62,6 +62,8 @@ class _MODULE__buildphones():
 ### THIS IS INCLUDED FOR DEMO PURPOSES; I RECOMMEND ADDING THE IMPORTED     ###
 ### MODULES DIRECTLY ON YOUR LOCAL FILESYSTEM.                              ###
 ###############################################################################
+# Reserve variables for the imported classes to be used
+CucmAXL = classmethod
 
 # Import from github
 def githubImport(
@@ -174,10 +176,6 @@ except:
 ### Module version check block ###
 ##################################
 moduleFailVerCheck("CucmAXL", VERSION_CucmAXL)
-
-
-# Typehint classes imported from github
-CucmAXL = classmethod
 
 # Suppress SSL warnings (use proper certs in production)
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -471,7 +469,7 @@ def main() -> None:
                 "[D] main() - After CSV source read"
             ) if argv.debug else next
             print(
-                "[D] Dump of list[dict] sourceData:"
+                "[D] main() - Dump of list[dict] sourceData:"
             ) if argv.debug else next
             pprint(sourceData) if argv.debug else next
 
@@ -488,13 +486,13 @@ def main() -> None:
         (phoneConfigs, lineConfigs) = serializeCSV(sourceData, argv.debug)
         print("[D] main() - After serializeCSV call") if argv.debug else next
         print(
-            "[D] Dump of list[dict] phoneConfigs:"
+            "[D] main() - Dump of list[dict] phoneConfigs:"
         ) if argv.debug else next
 
         pprint(phoneConfigs) if argv.debug else next
         
         print(
-            "[D] Dump of list[dict] lineConfigs"
+            "[D] main() - Dump of list[dict] lineConfigs"
         ) if argv.debug else next
 
         pprint(lineConfigs) if argv.debug else next
@@ -511,15 +509,15 @@ def main() -> None:
         argv.ccmServer
     )
 
-    print("[D] axlClientProfile -> (") if argv.debug else next
+    print("[D] main() - axlClientProfile -> (") if argv.debug else next
     print("[D] \twsdlSource,") if argv.debug else next
     print("[D] \taxlUser,") if argv.debug else next
     print("[D] \taxlPassword,") if argv.debug else next
     print("[D] \tccmServer") if argv.debug else next
     print("[D] )") if argv.debug else next
     print()
-    print("[D] Dump of list axlClientProfile:") if argv.debug else next
-    print(axlClientProfile) if argv.debug else next
+    print("[D] main() - Dump of list axlClientProfile:") if argv.debug else next
+    pprint(axlClientProfile) if argv.debug else next
 
     try:
         print(
