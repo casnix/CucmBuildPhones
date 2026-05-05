@@ -334,7 +334,7 @@ def handleInclusiveArgs(parser: namespace) -> None:
 
 
     withWSDLSource: bool = parser.wsdlSource and (
-        parser.axlPassword 
+        not parser.axlPassword 
         or not parser.axlUser 
         or not parser.ccmServer
     )
