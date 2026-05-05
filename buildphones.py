@@ -210,7 +210,7 @@ def addLines(ccm: CucmAXL, lines: list) -> None:
             else:
                 raise
 
-def serializeCSV(data: list) -> tuple[list, list]:
+def serializeCSV(data: list, debug: bool = False) -> tuple[list, list]:
     """
     Separate the source table into two arrays of lists.
     The first array will have data relevant to the addPhone method referenced
@@ -225,6 +225,10 @@ def serializeCSV(data: list) -> tuple[list, list]:
     _lineAppearance = []
     for enum in enumerate(data):
         index = enum[0]
+        print(
+            f"[D] serializeCSV() - Current indice is {index}"
+        ) if debug else next
+
         _lineConfig.append({
             "pattern": data[index]["linePattern"],
             "routePartitionName": data[index]["routePartition"],
@@ -439,7 +443,7 @@ def main() -> None:
 
     try:
         print("[+] Serializing CSV data...") if argv.verbose else next
-        (phoneConfigs, lineConfigs) = serializeCSV(sourceData)
+        (phoneConfigs, lineConfigs) = serializeCSV(sourceData, argv.debug)
         print("[D] main() - After serializeCSV call") if argv.debug else next
         print(
             "[D] JSON dump of list[dict] phoneConfigs:"
