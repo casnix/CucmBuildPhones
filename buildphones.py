@@ -299,30 +299,49 @@ def handleInclusiveArgs(parser: namespace) -> None:
         or not parser.axlUser 
         or not parser.wsdlSource
     )
+    print(
+        f"[D] handleInclusiveArgs() - withSourceFile = {withSourceFile}"
+    ) if parser.debug else next
 
     withCCMServer: bool = parser.ccmServer and (
         not parser.axlPassword 
         or not parser.axlUser 
         or not parser.wsdlSource
     )
+    print(
+        f"[D] handleInclusiveArgs() - withCCMServer = {withCCMServer}"
+    ) if parser.debug else next
+
 
     withAXLPassword: bool = parser.axlPassword and (
         not parser.ccmServer 
         or not parser.axlUser 
         or not parser.wsdlSource
     )
+    print(
+        f"[D] handleInclusiveArgs() - withAXLPassword = {withAXLPassword}"
+    ) if parser.debug else next
+
 
     withAXLUser: bool = parser.axlUser and (
         not parser.axlPassword 
         or not parser.ccmServer 
         or not parser.wsdlSource
     )
+    print(
+        f"[D] handleInclusiveArgs() - withAXLUser = {withAXLUser}"
+    ) if parser.debug else next
+
 
     withWSDLSource: bool = parser.wsdlSource and (
         parser.axlPassword 
         or not parser.axlUser 
         or not parser.ccmServer
     )
+    print(
+        f"[D] handleInclusiveArgs() - withWSDLSource = {withWSDLSource}"
+    ) if parser.debug else next
+
 
     if (
         withSourceFile
