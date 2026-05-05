@@ -227,6 +227,9 @@ def serializeCSV(data: list, debug: bool = False) -> tuple[list, list]:
             f"[D] serializeCSV() - Current enum is {enum}"
         ) if debug else next
 
+        print(
+            f"[D] serializeCSV() - Setting _lineConfig[{index}]"
+        ) if debug else next
         _lineConfig.append({
             "pattern": data[index]["linePattern"],
             "routePartitionName": data[index]["routePartition"],
@@ -236,7 +239,14 @@ def serializeCSV(data: list, debug: bool = False) -> tuple[list, list]:
             "voiceMailProfileName": data[index]["vmProfile"],
             "shareLineAppearanceCssName": data[index]["callingSearchSpace"]
         })
+        print(
+            f"[D] serializeCSV() - Dump of _lineConfig[{index}]:"
+        ) if debug else next
+        pprint(_lineConfig[index]) if debug else next
 
+        print(
+            f"[D] serializeCSV() - Setting _lineAppearance[{index}]"
+        ) if debug else next
         _lineAppearance.append({
             "index": int(data[index]["index"]),
             "label": data[index]["label"],
@@ -250,7 +260,14 @@ def serializeCSV(data: list, debug: bool = False) -> tuple[list, list]:
                 "routePartitionName": _lineConfig[index]["routePartitionName"]
             }
         })
+        print(
+            f"[D] serializeCSV() - Dump of _lineAppearance[{index}]:"
+        ) if debug else next
+        pprint(_lineAppearance[index]) if debug else next
 
+        print(
+            f"[D] serializeCSV() - Setting _deviceConfig[{index}]"
+        ) if debug else next
         _deviceConfig.append({
             "name": data[index]["devName"],
             "description": data[index]["desc"],
@@ -272,6 +289,10 @@ def serializeCSV(data: list, debug: bool = False) -> tuple[list, list]:
                 "line": [{**_lineAppearance}]
             }
         })
+        print(
+            f"[D] serializeCSV() - Dump of _deviceConfig[{index}]:"
+        ) if debug else next
+        pprint(_deviceConfig[index]) if debug else next
 
     return (_deviceConfig, _lineConfig)
 
