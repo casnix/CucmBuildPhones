@@ -223,7 +223,8 @@ def serializeCSV(data: list, debug: bool = False) -> tuple[list, list]:
     for enum in enumerate(data):
         index = enum[0]
         print(
-            f"[D] serializeCSV() - Current indice is {index}"
+            f"[D] serializeCSV() - Current indice is {index}\n"
+            f"[D] serializeCSV() - Current enum is {enum}"
         ) if debug else next
 
         _lineConfig.append({
@@ -345,7 +346,7 @@ def handleInclusiveArgs(parser: namespace) -> None:
         or withWSDLSource
         ):
         print(
-            "Options error!"
+            "Options error!\n"
             "These options must be used together: -t & -x & -p & -u\n"
             "This is true also if -c is used.\n"
             "For more information, use --help\n"
