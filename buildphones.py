@@ -8,6 +8,7 @@
 
 import csv
 import sys
+import json
 import asyncio
 import urllib3
 import argparse
@@ -22,6 +23,13 @@ class _MODULE__buildphones():
     _Version = "0.1.0-alpha"
     _VersionNum = "0.1.0.0"
     _VersionTuple = (0, 1, 0, 0)
+    _CopyrightHeader = """
+
+    Copyright Matt Rienzo (C) 2026
+    Builds several phones in Cisco Unified Communications Manager (CUCM) based
+    on a CSV.
+
+    """
 
     @classmethod
     def Version(cls) -> str:
@@ -34,6 +42,10 @@ class _MODULE__buildphones():
     @classmethod
     def VersionTuple(cls) -> tuple[int, int, int, int]:
         return cls._VersionTuple
+    
+    @classmethod
+    def Copyright(cls) -> str:
+        return cls._CopyrightHeader
     
 
 ###############################################################################
@@ -128,6 +140,11 @@ def moduleFailVerCheck(
 ####################################################################
 IMPORT_CucmAXL = ('casnix', 'CucmAXL', 'CucmAXL', 'latest')
 
+####################################
+### Module minimum version block ###
+####################################
+VERSION_CucmAXL = (0, 1, 0, 0)
+
 #########################
 ### Import call block ###
 #########################
@@ -136,7 +153,7 @@ githubImport(*IMPORT_CucmAXL)
 ##################################
 ### Module version check block ###
 ##################################
-moduleFailVerCheck("CucmAXL", (0, 1, 0, 0))
+moduleFailVerCheck("CucmAXL", VERSION_CucmAXL)
 
 
 # Typehint classes imported from github
@@ -156,6 +173,7 @@ def addLines(ccm: CucmAXL, lines: list) -> None:
     """
     Iterate through `lines` and add a line per each to CUCM.
     """
+    failures = 0
     for thisLine in lines:
         try:
             ccm.addLine(line = {**thisLine})
@@ -171,7 +189,7 @@ def addLines(ccm: CucmAXL, lines: list) -> None:
             else:
                 raise
 
-def renderCSV(data: list) -> tuple[list, list]:
+def serializeCSV(data: list) -> tuple[list, list]:
     """
     Separate the source table into two arrays of lists.
     The first array will have data relevant to the addPhone method referenced
@@ -233,6 +251,18 @@ def renderCSV(data: list) -> tuple[list, list]:
 
     return (_deviceConfig, _lineConfig)
 
+def printVersion() -> None:
+    """
+    Print version, copyright, and required CucmAXL module minimum version.
+    """
+
+    print(f"Script buildphones.py version {_MODULE__buildphones.Version()}")
+    print(_MODULE__buildphones.Copyright())
+    print(f"Uses the CucmAXL, minimum version {VERSION_CucmAXL}")
+    print("CucmAXL is imported from github.com/casnix/CucmAXL")
+
+    sys.exit(0)
+
 def parseARGV() -> Namespace:
     """
     Glean CSV source from command line arguments.
@@ -279,11 +309,35 @@ def parseARGV() -> Namespace:
         "required": True
     }
 
+    versionArgs = ('-v', '--version')
+    versionArgsOpts = {
+        "help": "Print version",
+        "dest": "printVersion",
+        "action": "store_true"
+    }
+
+    debugArgs = ('-d', '--debug')
+    debugArgsOpts = {
+        "help": "Turn on debug console logs to STDOUT",
+        "dest": "debug",
+        "action": "store_true"
+    }
+
+    verboseArgs = ('-V', '--verbose')
+    verboseArgsOpts = {
+        "help": "Turn on verbose output",
+        "dest": "verbose",
+        "action": "store_true"
+    }
+
     parser.add_argument(*sourceArgs, **sourceArgsOpts)
     parser.add_argument(*serverArgs, **serverArgsOpts)
     parser.add_argument(*wsdlArgs, **wsdlArgsOpts)
     parser.add_argument(*passwordArgs, **passwordArgsOpts)
     parser.add_argument(*userArgs, **userArgsOpts)
+    parser.add_argument(*versionArgs, **versionArgsOpts)
+    parser.add_argument(*debugArgs, **debugArgsOpts)
+    parser.add_argument(*verboseArgs, **verboseArgsOpts)
 
     return parser.parse_args()
 
@@ -295,14 +349,51 @@ def main() -> None:
         3) Open a client to the CUCM server and build the phones
     """
     argv: Namespace = parseARGV()
-    with open(argv.sourceFile, newline='') as f:
-        reader = csv.DictReader(f)
-        sourceData = list(reader)
+    printVersion() if argv.printVersion else next
+    argv.verbose = True if argv.debug else next
+
+    print("[+] Reading CSV source.") if argv.verbose else next
+    try:
+        with open(argv.sourceFile, newline='') as f:
+            reader = csv.DictReader(f)
+            sourceData = list(reader)
+            print(
+                "[D] main() - After CSV source read"
+            ) if argv.debug else next
+            print(
+                "[D] JSON dump of list[dict] sourceData:"
+            ) if argv.debug else next
+            print(json.dumps(sourceData)) if argv.debug else next
+
+    except Exception as e:
+        print(f"[x] Failed to open {argv.sourceFile}.")
+        print(f"[~] Exception: {str(e)}")
+        sys.exit(2)
 
     phoneConfigs: list[dict[str, str | list]]
     lineConfigs: list[dict[str, str]]
-    (phoneConfigs, lineConfigs) = renderCSV(sourceData)
 
+    try:
+        print("[+] Serializing CSV data...") if argv.verbose else next
+        (phoneConfigs, lineConfigs) = serializeCSV(sourceData)
+        print("[D] main() - After serializeCSV call") if argv.debug else next
+        print(
+            "[D] JSON dump of list[dict] phoneConfigs:"
+        ) if argv.debug else next
+
+        print(json.dumps(phoneConfigs)) if argv.debug else next
+        
+        print(
+            "[D] JSON dump of list[dict] lineConfigs"
+        ) if argv.debug else next
+
+        print(json.dumps(lineConfigs)) if argv.debug else next
+    
+    except Exception as e:
+        print("[x] Failed to serialize CSV data.")
+        print(f"[~] Exception: {str(e)}")
+        sys.exit(1)
+    
     axlClientProfile = (
         argv.wsdlSource,
         argv.axlUser,
@@ -310,10 +401,48 @@ def main() -> None:
         argv.ccmServer
     )
 
-    CUCM = CucmAXL(*axlClientProfile)
+    print("[D] axlClientProfile -> (") if argv.debug else next
+    print("[D] \twsdlSource,") if argv.debug else next
+    print("[D] \taxlUser,") if argv.debug else next
+    print("[D] \taxlPassword,") if argv.debug else next
+    print("[D] \tccmServer") if argv.debug else next
+    print("[D] )") if argv.debug else next
+    print()
+    print("[D] JSON dump of list axlClientProfile:") if argv.debug else next
+    print(json.dumps(axlClientProfile)) if argv.debug else next
 
-    addLines(CUCM, lineConfigs)
-    addPhones(CUCM, phoneConfigs)
+    try:
+        print(
+            f"[+] Connecting to CallManager server {argv.ccmServer}..."
+        ) if argv.verbose else next
+
+        CUCM = CucmAXL(*axlClientProfile)
+    
+    except Exception as e:
+        print(f"[x] Failed to connect to CallManager server {argv.ccmServer}")
+        print(f"[~] Exception: {str(e)}")
+        sys.exit(1)
+
+
+    try:
+        print("[+] Adding lines...") if argv.verbose else next
+        addLines(CUCM, lineConfigs)
+    except Exception as e:
+        print(f"[x] Failed to add lines")
+        print(f"[~] Exception: {str(e)}")
+        sys.exit(1)
+    
+
+    try:
+        print("[+] Adding phones...") if argv.verbose else next
+        addPhones(CUCM, phoneConfigs)
+    except Exception as e:
+        print(f"[x] Failed to add phones")
+        print(f"[~] Exception: {str(e)}")
+        sys.exit(1)
+
+    print("[+] Done.")
+    sys.exit(0)
 
 if __name__ == "__main__":
     main()
