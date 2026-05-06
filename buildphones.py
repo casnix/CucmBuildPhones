@@ -8,12 +8,11 @@
 
 import csv
 import sys
-import asyncio
 import urllib3
 import argparse
-import datetime
 import requests
 import namespace
+import traceback
 
 from pprint import pprint
 
@@ -307,6 +306,17 @@ def printVersion() -> None:
     sys.exit(0)
 
 def handleInclusiveArgs(parser: namespace) -> None:
+    """
+    Verify command line arguments that require companion options are all there
+    """
+    print(
+        f"[D] handleInclusiveArgs() - parser.sourceFile = {parser.sourceFile}\n"
+        f"[D] handleInclusiveArgs() - parser.ccmServer = {parser.ccmServer}\n"
+        f"[D] handleInclusiveArgs() - parser.axlPassword = {parser.axlPassword}\n"
+        f"[D] handleInclusiveArgs() - parser.axlUser = {parser.axlUser}\n"
+        f"[D] handleInclusiveArgs() - parser.wsdlSource = {parser.wsdlSource}\n"
+    ) if parser.debug else next
+
     withSourceFile: bool = parser.sourceFile and (
         not parser.ccmServer
         or not parser.axlPassword 
