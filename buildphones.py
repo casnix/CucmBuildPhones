@@ -187,7 +187,10 @@ def addPhones(ccm: CucmAXL, phones: list) -> None:
     Iterate through `phones` and add a phone per each to CUCM.
     """
     for thisPhone in phones:
-        ccm.addPhone(phone={**thisPhone})
+        try:
+            ccm.addPhone(phone={**thisPhone})
+        except:
+            raise
 
 def addLines(ccm: CucmAXL, lines: list) -> None:
     """
@@ -483,10 +486,10 @@ def main() -> None:
                 "[D] main() - Dump of list[dict] sourceData:"
             ) if argv.debug else next
             pprint(sourceData) if argv.debug else next
-
     except Exception as e:
         print(f"[x] Failed to open {argv.sourceFile}.")
         print(f"[~] Exception: {str(e)}")
+        traceback.print_exc()
         sys.exit(2)
 
     phoneConfigs: list[dict[str, str | list]]
@@ -507,10 +510,10 @@ def main() -> None:
         ) if argv.debug else next
 
         pprint(lineConfigs) if argv.debug else next
-    
     except Exception as e:
         print("[x] Failed to serialize CSV data.")
         print(f"[~] Exception: {str(e)}")
+        traceback.print_exc()
         sys.exit(1)
     
     axlClientProfile = (
@@ -536,12 +539,11 @@ def main() -> None:
         ) if argv.verbose else next
 
         CUCM = CucmAXL(*axlClientProfile)
-    
     except Exception as e:
         print(f"[x] Failed to connect to CallManager server {argv.ccmServer}")
         print(f"[~] Exception: {str(e)}")
+        traceback.print_exc()
         sys.exit(1)
-
 
     try:
         print("[+] Adding lines...") if argv.verbose else next
@@ -549,15 +551,16 @@ def main() -> None:
     except Exception as e:
         print(f"[x] Failed to add lines")
         print(f"[~] Exception: {str(e)}")
+        traceback.print_exc()
         sys.exit(1)
     
-
     try:
         print("[+] Adding phones...") if argv.verbose else next
         addPhones(CUCM, phoneConfigs)
     except Exception as e:
         print(f"[x] Failed to add phones")
         print(f"[~] Exception: {str(e)}")
+        traceback.print_exc()
         sys.exit(1)
 
     print("[+] Done.")
