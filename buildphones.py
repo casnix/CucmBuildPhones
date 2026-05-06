@@ -183,23 +183,34 @@ moduleFailVerCheck("CucmAXL", VERSION_CucmAXL)
 # Suppress SSL warnings (use proper certs in production)
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-def addPhones(ccm: CucmAXL, phones: list) -> None:
+def addPhones(ccm: CucmAXL, phones: list, debug: bool) -> None:
     """
     Iterate through `phones` and add a phone per each to CUCM.
     """
+    def printOut(thisPhone: dict) -> None:
+        print("[D] addPhones() -- current value of dict: thisPhone:")
+        pprint(thisPhone)
+
     for thisPhone in phones:
         try:
+            printOut(thisPhone) if debug else next
             ccm.addPhone(phone={**thisPhone})
         except:
             raise
 
-def addLines(ccm: CucmAXL, lines: list) -> None:
+def addLines(ccm: CucmAXL, lines: list, debug: bool) -> None:
     """
     Iterate through `lines` and add a line per each to CUCM.
     """
-    failures = 0
+
+    def printOut(thisLine: dict) -> None:
+        print("[D] addLines() -- current value of dict: thisLine:")
+        pprint(thisLine)
+
+    failures = 0 # For future failure tolerance count
     for thisLine in lines:
         try:
+            printOut(thisLine) if debug else next
             ccm.addLine(line = {**thisLine})
         except Exception as e:
             if (
@@ -566,7 +577,7 @@ def main() -> None:
 
     try:
         print("[+] Adding lines...") if argv.verbose else next
-        addLines(CUCM, lineConfigs)
+        addLines(CUCM, lineConfigs, argv.debug)
     except Exception as e:
         print(f"[x] Failed to add lines")
         print(f"[~] Exception: {str(e)}")
@@ -575,7 +586,7 @@ def main() -> None:
     
     try:
         print("[+] Adding phones...") if argv.verbose else next
-        addPhones(CUCM, phoneConfigs)
+        addPhones(CUCM, phoneConfigs, argv.debug)
     except Exception as e:
         print(f"[x] Failed to add phones")
         print(f"[~] Exception: {str(e)}")
