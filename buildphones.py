@@ -416,14 +416,14 @@ def parseARGV() -> namespace:
         "dest": 'wsdlSource',
     }
     
-    passwordArgs = ('-p', '--password')
+    passwordArgs = ('-P', '--password')
     passwordArgsOpts = {
         "help": "Password for standard AXL user",
         "type": str,
         "dest": 'axlPassword',
     }
 
-    userArgs = ('-u', '--user')
+    userArgs = ('-U', '--user')
     userArgsOpts = {
         "help": "Username for standard AXL user",
         "type": str,
@@ -451,6 +451,21 @@ def parseARGV() -> namespace:
         "action": "store_true"
     }
 
+    portArgs = ('-p', '--port')
+    portArgsOpts = {
+        "help": "Specify port for AXL service on server (default 8443)",
+        "dest": "port",
+        "default": "8443"
+    }
+
+    axlPathArgs = ('-a', '--service-path')
+    axlPathOpts = {
+        "help": "Specify the path to the AXL service on server" +
+         " (default /axl/)",
+        "dest": "servicePath",
+        "default": "/axl/"
+    }
+
     parser.add_argument(*sourceArgs, **sourceArgsOpts)
     parser.add_argument(*serverArgs, **serverArgsOpts)
     parser.add_argument(*wsdlArgs, **wsdlArgsOpts)
@@ -459,6 +474,8 @@ def parseARGV() -> namespace:
     parser.add_argument(*versionArgs, **versionArgsOpts)
     parser.add_argument(*debugArgs, **debugArgsOpts)
     parser.add_argument(*verboseArgs, **verboseArgsOpts)
+    parser.add_argument(*portArgs, **portArgsOpts)
+    parser.add_argument(*axlPathArgs, **axlPathOpts)
 
     return parser.parse_args(args=None if sys.argv[1:] else ['--help'])
 
@@ -516,11 +533,12 @@ def main() -> None:
         traceback.print_exc()
         sys.exit(1)
     
+    targetCCMServer = f"{argv.ccmServer}:{argv.port}{argv.servicePath}"
     axlClientProfile = (
         argv.wsdlSource,
         argv.axlUser,
         argv.axlPassword,
-        argv.ccmServer
+        targetCCMServer
     )
 
     print("[D] main() - axlClientProfile -> (") if argv.debug else next
