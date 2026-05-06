@@ -99,6 +99,7 @@ def githubImport(
 
     try:
         r = requests.get(url).text
+        print(r)
         exec(r, globals())
     except Exception as e:
         print(
