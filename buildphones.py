@@ -158,7 +158,7 @@ def moduleFailVerCheck(
 # Formatted this way with the tuple expansion for the purpose of ###
 # readability in the case of multiple remote imports.            ###
 ####################################################################
-IMPORT_CucmAXL = ('casnix', 'CucmAXL', 'CucmAXL', 'latest')
+IMPORT_CucmAXL = ('casnix', 'CucmAXL', 'CucmAXL', 'master')
 
 ####################################
 ### Module minimum version block ###
