@@ -29,6 +29,8 @@ class _MODULE__buildphones():
     Builds several phones in Cisco Unified Communications Manager (CUCM) based
     on a CSV.
 
+    MIT License
+    
     """
 
     @classmethod
