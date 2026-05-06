@@ -214,8 +214,9 @@ def addLines(ccm: CucmAXL, lines: list, debug: bool) -> None:
             ccm.addLine(line = {**thisLine})
         except Exception as e:
             if (
-                "already exists" in str(e).lower() \
-                    or "duplicate" in str(e).lower()
+                "already exists" in str(e).lower()
+                or "duplicate" in str(e).lower()
+                or "A DN exists"
             ):
                 print(
                     f"[~] DN {thisLine['pattern']} already exists, "+
