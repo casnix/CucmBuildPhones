@@ -454,7 +454,7 @@ def parseARGV() -> namespace:
     parser.add_argument(*debugArgs, **debugArgsOpts)
     parser.add_argument(*verboseArgs, **verboseArgsOpts)
 
-    return parser.parse_args()
+    return parser.parse_args(args=None if sys.argv[1:] else ['--help'])
 
 def main() -> None:
     """
