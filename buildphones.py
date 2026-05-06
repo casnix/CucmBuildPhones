@@ -393,7 +393,6 @@ def parseARGV() -> namespace:
     sourceArgsOpts = {
         "help": 'Source CSV file to read phone and line table from.',
         "type": str,
-        "default": "source.csv",
         "dest": 'sourceFile'
     }
     
@@ -408,7 +407,6 @@ def parseARGV() -> namespace:
     wsdlArgsOpts = {
         "help": 'Path to the WSDL file defining the API',
         "type": str,
-        "default": "AXLAPI.wsdl",
         "dest": 'wsdlSource',
     }
     
