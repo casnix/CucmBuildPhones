@@ -30,7 +30,7 @@ class _MODULE__buildphones():
     on a CSV.
 
     MIT License
-    
+
     """
 
     @classmethod
@@ -63,7 +63,8 @@ class _MODULE__buildphones():
 ### THIS IS INCLUDED FOR DEMO PURPOSES; I RECOMMEND ADDING THE IMPORTED     ###
 ### MODULES DIRECTLY ON YOUR LOCAL FILESYSTEM.                              ###
 ###############################################################################
-# Reserve variables for the imported classes to be used
+# Reserve the class names to be imported
+_MODULE__CucmAXL = classmethod
 CucmAXL = classmethod
 
 # Import from github
@@ -302,7 +303,7 @@ def printVersion() -> None:
 
     print(f"Script buildphones.py version {_MODULE__buildphones.Version()}")
     print(_MODULE__buildphones.Copyright())
-    print(f"Uses the CucmAXL, minimum version {VERSION_CucmAXL}")
+    print(f"Uses the CucmAXL module, version {_MODULE__CucmAXL.Version()}")
     print("CucmAXL is imported from github.com/casnix/CucmAXL")
 
     sys.exit(0)
