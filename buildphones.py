@@ -252,7 +252,8 @@ def serializeCSV(data: list, debug: bool = False) -> tuple[list, list]:
             "alertingName": data[index]["alertingName"],
             "asciiAlertingName": data[index]["asciiAlertingName"],
             "voiceMailProfileName": data[index]["vmProfile"],
-            "shareLineAppearanceCssName": data[index]["callingSearchSpace"]
+            "shareLineAppearanceCssName": data[index]["callingSearchSpace"],
+            "usage": "Device"
         })
         print(
             f"[D] serializeCSV() - Dump of _lineConfig[{index}]:"
