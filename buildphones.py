@@ -29,9 +29,9 @@ DEBUG_MODE: mutable_bool = False
 ### Module versioning for my convention###
 ##########################################
 class _MODULE__buildphones():
-    _Version: immutable_str = "0.1.0-beta"
-    _VersionNum: immutable_str = "0.1.0.1"
-    _VersionTuple = (0, 1, 0, 1)
+    _Version: immutable_str = "0.1.1"
+    _VersionNum: immutable_str = "0.1.1.0"
+    _VersionTuple = (0, 1, 1, 0)
     _CopyrightHeader: immutable_str = """
 
     Copyright Matt Rienzo (C) 2026
