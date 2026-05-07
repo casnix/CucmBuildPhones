@@ -526,6 +526,8 @@ def main() -> None:
     argv: namespace = parseARGV()
     handleInclusiveArgs(argv)
     printVersion() if argv.printVersion else next
+    
+    global VERBOSE_MODE, DEBUG_MODE
     VERBOSE_MODE = True if argv.debug else argv.verbose
     DEBUG_MODE = True if argv.debug else False
 
