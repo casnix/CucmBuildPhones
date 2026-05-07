@@ -511,7 +511,7 @@ def main() -> None:
     argv: namespace = parseARGV()
     handleInclusiveArgs(argv)
     printVersion() if argv.printVersion else next
-    argv.verbose = True if argv.debug else False
+    argv.verbose = True if argv.debug else argv.verbose
 
     print("[+] Reading CSV source.") if argv.verbose else next
     try:
