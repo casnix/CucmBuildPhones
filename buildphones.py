@@ -81,8 +81,7 @@ def githubImport(
         user: str,
         repo: str, 
         module: str, 
-        tag: str = "master",
-        printOut: bool = False
+        tag: str = "master"
         ) -> None:
     """
     Dynamicaly import a module from a remote github repo.  THIS CAN INTRODUCE
@@ -103,20 +102,20 @@ def githubImport(
     )
 
     print(
-        f"[githubImport] Attempting to grab {module} for import from {url}"
-    ) if printOut else next
+        f"[githubImport()] Attempting to grab {module} for import from {url}"
+    ) if VERBOSE_MODE else next
 
     try:
         r = requests.get(url).text
-        # print(r)  # For dubug purposes
+        print(r) if DEBUG_MODE else next
         exec(r, globals())
     except Exception as e:
         print(
-            f"[githubimport] Failed to grab {module} from {url}."
-        ) if printOut else next
+            f"[githubimport()] Failed to grab {module} from {url}."
+        ) if VERBOSE_MODE else next
         print(
-            f"[githubImport] Reason: {type(e).__name__}: {e}"
-        ) if printOut else next
+            f"[githubImport()] Reason: {type(e).__name__}: {e}"
+        ) if VERBOSE_MODE else next
 
         raise
 
@@ -179,7 +178,6 @@ VERSION_CucmAXL = (0, 1, 0, 0)
 #########################
 try:
     githubImport(*IMPORT_CucmAXL)
-
 except:
     sys.exit(1)
 
@@ -192,7 +190,7 @@ moduleFailVerCheck("CucmAXL", VERSION_CucmAXL)
 # Suppress SSL warnings (use proper certs in production)
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-def addPhones(ccm: CucmAXL, phones: list, debug: bool) -> None:
+def addPhones(ccm: CucmAXL, phones: list) -> None:
     """
     Iterate through `phones` and add a phone per each to CUCM.
     """
@@ -202,7 +200,7 @@ def addPhones(ccm: CucmAXL, phones: list, debug: bool) -> None:
 
     for thisPhone in phones:
         try:
-            printOut(thisPhone) if debug else next
+            printOut(thisPhone) if DEBUG_MODE else next
             print(
                 f"[addPhones] Adding {thisPhone["name"]}."
             ) if VERBOSE_MODE else next
@@ -216,7 +214,7 @@ def addPhones(ccm: CucmAXL, phones: list, debug: bool) -> None:
             else:
                 raise
     
-def addLines(ccm: CucmAXL, lines: list, debug: bool) -> None:
+def addLines(ccm: CucmAXL, lines: list) -> None:
     """
     Iterate through `lines` and add a line per each to CUCM.
     """
@@ -228,7 +226,7 @@ def addLines(ccm: CucmAXL, lines: list, debug: bool) -> None:
     failures = 0 # For future failure tolerance count
     for thisLine in lines:
         try:
-            printOut(thisLine) if debug else next
+            printOut(thisLine) if DEBUG_MODE else next
             print(
                 f"[addLines()] Adding {thisLine['pattern']}."
             ) if VERBOSE_MODE else next
@@ -246,7 +244,7 @@ def addLines(ccm: CucmAXL, lines: list, debug: bool) -> None:
             else:
                 raise
 
-def serializeCSV(data: list, debug: bool = False) -> tuple[list, list]:
+def serializeCSV(data: list) -> tuple[list, list]:
     """
     Separate the source table into two arrays of lists.
     The first array will have data relevant to the addPhone method referenced
@@ -262,11 +260,11 @@ def serializeCSV(data: list, debug: bool = False) -> tuple[list, list]:
         print(
             f"[D] serializeCSV() - Current indice is {index}\n"
             f"[D] serializeCSV() - Current enum is {enum}"
-        ) if debug else next
+        ) if DEBUG_MODE else next
 
         print(
             f"[D] serializeCSV() - Setting _lineConfig[{index}]"
-        ) if debug else next
+        ) if DEBUG_MODE else next
         _lineConfig.append({
             "pattern": data[index]["linePattern"],
             "routePartitionName": data[index]["routePartition"],
@@ -279,12 +277,12 @@ def serializeCSV(data: list, debug: bool = False) -> tuple[list, list]:
         })
         print(
             f"[D] serializeCSV() - Dump of _lineConfig[{index}]:"
-        ) if debug else next
-        pprint(_lineConfig[index]) if debug else next
+        ) if DEBUG_MODE else next
+        pprint(_lineConfig[index]) if DEBUG_MODE else next
 
         print(
             f"[D] serializeCSV() - Setting _lineAppearance"
-        ) if debug else next
+        ) if DEBUG_MODE else next
         _lineAppearance = {
             "index": int(data[index]["index"]),
             "label": data[index]["label"],
@@ -300,12 +298,12 @@ def serializeCSV(data: list, debug: bool = False) -> tuple[list, list]:
         }
         print(
             f"[D] serializeCSV() - Dump of _lineAppearance:"
-        ) if debug else next
-        pprint(_lineAppearance) if debug else next
+        ) if DEBUG_MODE else next
+        pprint(_lineAppearance) if DEBUG_MODE else next
 
         print(
             f"[D] serializeCSV() - Setting _deviceConfig[{index}]"
-        ) if debug else next
+        ) if DEBUG_MODE else next
         _deviceConfig.append({
             "name": data[index]["devName"],
             "description": data[index]["desc"],
@@ -331,8 +329,8 @@ def serializeCSV(data: list, debug: bool = False) -> tuple[list, list]:
         })
         print(
             f"[D] serializeCSV() - Dump of _deviceConfig[{index}]:"
-        ) if debug else next
-        pprint(_deviceConfig[index]) if debug else next
+        ) if DEBUG_MODE else next
+        pprint(_deviceConfig[index]) if DEBUG_MODE else next
 
     return (_deviceConfig, _lineConfig)
 
@@ -526,23 +524,23 @@ def main() -> None:
     argv: namespace = parseARGV()
     handleInclusiveArgs(argv)
     printVersion() if argv.printVersion else next
-    
+
     global VERBOSE_MODE, DEBUG_MODE
     VERBOSE_MODE = True if argv.debug else argv.verbose
     DEBUG_MODE = True if argv.debug else False
 
-    print("[+] Reading CSV source.") if argv.verbose else next
+    print("[+] Reading CSV source.") if VERBOSE_MODE else next
     try:
         with open(argv.sourceFile, newline='') as f:
             reader = csv.DictReader(f)
             sourceData = list(reader)
             print(
                 "[D] main() - After CSV source read"
-            ) if argv.debug else next
+            ) if DEBUG_MODE else next
             print(
                 "[D] main() - Dump of list[dict] sourceData:"
-            ) if argv.debug else next
-            pprint(sourceData) if argv.debug else next
+            ) if DEBUG_MODE else next
+            pprint(sourceData) if DEBUG_MODE else next
     except Exception as e:
         print(f"[x] Failed to open {argv.sourceFile}.")
         print(f"[~] Exception: {str(e)}")
@@ -553,20 +551,20 @@ def main() -> None:
     lineConfigs: list[dict[str, str]]
 
     try:
-        print("[+] Serializing CSV data...") if argv.verbose else next
-        (phoneConfigs, lineConfigs) = serializeCSV(sourceData, argv.debug)
-        print("[D] main() - After serializeCSV call") if argv.debug else next
+        print("[+] Serializing CSV data...") if VERBOSE_MODE else next
+        (phoneConfigs, lineConfigs) = serializeCSV(sourceData)
+        print("[D] main() - After serializeCSV call") if DEBUG_MODE else next
         print(
             "[D] main() - Dump of list[dict] phoneConfigs:"
-        ) if argv.debug else next
+        ) if DEBUG_MODE else next
 
-        pprint(phoneConfigs) if argv.debug else next
+        pprint(phoneConfigs) if DEBUG_MODE else next
         
         print(
             "[D] main() - Dump of list[dict] lineConfigs"
-        ) if argv.debug else next
+        ) if DEBUG_MODE else next
 
-        pprint(lineConfigs) if argv.debug else next
+        pprint(lineConfigs) if DEBUG_MODE else next
     except Exception as e:
         print("[x] Failed to serialize CSV data.")
         print(f"[~] Exception: {str(e)}")
@@ -581,20 +579,20 @@ def main() -> None:
         targetCCMServer
     )
 
-    print("[D] main() - axlClientProfile -> (") if argv.debug else next
-    print("[D] \twsdlSource,") if argv.debug else next
-    print("[D] \taxlUser,") if argv.debug else next
-    print("[D] \taxlPassword,") if argv.debug else next
-    print("[D] \tccmServer") if argv.debug else next
-    print("[D] )") if argv.debug else next
+    print("[D] main() - axlClientProfile -> (") if DEBUG_MODE else next
+    print("[D] \twsdlSource,") if DEBUG_MODE else next
+    print("[D] \taxlUser,") if DEBUG_MODE else next
+    print("[D] \taxlPassword,") if DEBUG_MODE else next
+    print("[D] \tccmServer") if DEBUG_MODE else next
+    print("[D] )") if DEBUG_MODE else next
     print()
-    print("[D] main() - Dump of list axlClientProfile:") if argv.debug else next
-    pprint(axlClientProfile) if argv.debug else next
+    print("[D] main() - Dump of list axlClientProfile:") if DEBUG_MODE else next
+    pprint(axlClientProfile) if DEBUG_MODE else next
 
     try:
         print(
             f"[+] Connecting to CallManager server {argv.ccmServer}..."
-        ) if argv.verbose else next
+        ) if VERBOSE_MODE else next
 
         CUCM = CucmAXL(*axlClientProfile)
     except Exception as e:
@@ -604,8 +602,8 @@ def main() -> None:
         sys.exit(1)
 
     try:
-        print("[+] Adding lines...") if argv.verbose else next
-        addLines(CUCM, lineConfigs, argv.debug)
+        print("[+] Adding lines...") if VERBOSE_MODE else next
+        addLines(CUCM, lineConfigs)
     except Exception as e:
         print(f"[x] Failed to add lines")
         print(f"[~] Exception: {str(e)}")
@@ -613,8 +611,8 @@ def main() -> None:
         sys.exit(1)
     
     try:
-        print("[+] Adding phones...") if argv.verbose else next
-        addPhones(CUCM, phoneConfigs, argv.debug)
+        print("[+] Adding phones...") if VERBOSE_MODE else next
+        addPhones(CUCM, phoneConfigs)
     except Exception as e:
         print(f"[x] Failed to add phones")
         print(f"[~] Exception: {str(e)}")
