@@ -303,6 +303,7 @@ def serializeCSV(data: list, debug: bool = False) -> tuple[list, list]:
             "deviceMobilityMode": data[index]["devMobility"],
             "securityProfileName": data[index]["securityProfile"],
             "sipProfileName": data[index]["sipProfile"],
+            "callingSearchSpaceName": data[index]["callingSearchSpace"],
             "lines": {
                 "line": [{**_lineAppearance}]
             }
