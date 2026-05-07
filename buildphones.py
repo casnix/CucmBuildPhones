@@ -289,7 +289,6 @@ def serializeCSV(data: list, debug: bool = False) -> tuple[list, list]:
             "name": data[index]["devName"],
             "description": data[index]["desc"],
             "product": data[index]["devType"],
-            "model": data[index]["devModel"],
             "class": data[index]["devClass"],
             "protocol": data[index]["protocol"],
             "protocolSide": data[index]["protocolSide"],
@@ -302,6 +301,8 @@ def serializeCSV(data: list, debug: bool = False) -> tuple[list, list]:
             "packetCaptureMode": data[index]["packetCap"],
             "certificateOperation": data[index]["certOp"],
             "deviceMobilityMode": data[index]["devMobility"],
+            "securityProfileName": data[index]["securityProfileName"],
+            "sipProfileName": data[index]["sipProfile"],
             "lines": {
                 "line": [{**_lineAppearance}]
             }
