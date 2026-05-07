@@ -16,14 +16,23 @@ import traceback
 
 from pprint import pprint
 
+# Type hints to show reader intended use of variable
+mutable_bool = bool
+immutable_str = str
+
+# Global vars for main logics
+VERBOSE_MODE: mutable_bool = False
+DEBUG_MODE: mutable_bool = False
+
+
 ##########################################
 ### Module versioning for my convention###
 ##########################################
 class _MODULE__buildphones():
-    _Version = "0.1.0-beta"
-    _VersionNum = "0.1.0.1"
+    _Version: immutable_str = "0.1.0-beta"
+    _VersionNum: immutable_str = "0.1.0.1"
     _VersionTuple = (0, 1, 0, 1)
-    _CopyrightHeader = """
+    _CopyrightHeader: immutable_str = """
 
     Copyright Matt Rienzo (C) 2026
     Builds several phones in Cisco Unified Communications Manager (CUCM) based
@@ -194,6 +203,9 @@ def addPhones(ccm: CucmAXL, phones: list, debug: bool) -> None:
     for thisPhone in phones:
         try:
             printOut(thisPhone) if debug else next
+            print(
+                f"[addPhones] Adding {thisPhone["name"]}."
+            ) if VERBOSE_MODE else next
             ccm.addPhone(phone={**thisPhone})
         except Exception as e:
             if "duplicate value" in str(e).lower():
@@ -217,6 +229,9 @@ def addLines(ccm: CucmAXL, lines: list, debug: bool) -> None:
     for thisLine in lines:
         try:
             printOut(thisLine) if debug else next
+            print(
+                f"[addLines()] Adding {thisLine['pattern']}."
+            ) if VERBOSE_MODE else next
             ccm.addLine(line = {**thisLine})
         except Exception as e:
             if (
@@ -511,7 +526,8 @@ def main() -> None:
     argv: namespace = parseARGV()
     handleInclusiveArgs(argv)
     printVersion() if argv.printVersion else next
-    argv.verbose = True if argv.debug else argv.verbose
+    VERBOSE_MODE = True if argv.debug else argv.verbose
+    DEBUG_MODE = True if argv.debug else False
 
     print("[+] Reading CSV source.") if argv.verbose else next
     try:
