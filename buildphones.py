@@ -20,9 +20,9 @@ from pprint import pprint
 ### Module versioning for my convention###
 ##########################################
 class _MODULE__buildphones():
-    _Version = "0.1.0-alpha"
-    _VersionNum = "0.1.0.0"
-    _VersionTuple = (0, 1, 0, 0)
+    _Version = "0.1.0-beta"
+    _VersionNum = "0.1.0.1"
+    _VersionTuple = (0, 1, 0, 1)
     _CopyrightHeader = """
 
     Copyright Matt Rienzo (C) 2026
@@ -99,7 +99,7 @@ def githubImport(
 
     try:
         r = requests.get(url).text
-        print(r)
+        # print(r)  # For dubug purposes
         exec(r, globals())
     except Exception as e:
         print(
@@ -511,7 +511,7 @@ def main() -> None:
     argv: namespace = parseARGV()
     handleInclusiveArgs(argv)
     printVersion() if argv.printVersion else next
-    argv.verbose = True if argv.debug else next
+    argv.verbose = True if argv.debug else False
 
     print("[+] Reading CSV source.") if argv.verbose else next
     try:
