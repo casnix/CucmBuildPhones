@@ -195,9 +195,15 @@ def addPhones(ccm: CucmAXL, phones: list, debug: bool) -> None:
         try:
             printOut(thisPhone) if debug else next
             ccm.addPhone(phone={**thisPhone})
-        except:
-            raise
-
+        except Exception as e:
+            if "duplicate value" in str(e).lower():
+                print(
+                    f"[~] Phone {thisPhone["name"]} already exists, skipping."
+                )
+                next
+            else:
+                raise
+    
 def addLines(ccm: CucmAXL, lines: list, debug: bool) -> None:
     """
     Iterate through `lines` and add a line per each to CUCM.
