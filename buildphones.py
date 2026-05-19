@@ -29,9 +29,9 @@ DEBUG_MODE: mutable_bool = False
 ### Module versioning for my convention###
 ##########################################
 class _MODULE__buildphones():
-    _Version: immutable_str = "0.1.1"
-    _VersionNum: immutable_str = "0.1.1.0"
-    _VersionTuple = (0, 1, 1, 0)
+    _Version: immutable_str = "0.1.2-alpha"
+    _VersionNum: immutable_str = "0.1.2.1"
+    _VersionTuple = (0, 1, 2, 1)
     _CopyrightHeader: immutable_str = """
 
     Copyright Matt Rienzo (C) 2026
@@ -173,20 +173,6 @@ IMPORT_CucmAXL = ('casnix', 'CucmAXL', 'CucmAXL', 'master')
 ####################################
 VERSION_CucmAXL = (0, 1, 0, 0)
 
-#########################
-### Import call block ###
-#########################
-try:
-    githubImport(*IMPORT_CucmAXL)
-except:
-    sys.exit(1)
-
-
-##################################
-### Module version check block ###
-##################################
-moduleFailVerCheck("CucmAXL", VERSION_CucmAXL)
-
 # Suppress SSL warnings (use proper certs in production)
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -243,6 +229,27 @@ def addLines(ccm: CucmAXL, lines: list) -> None:
                 )
             else:
                 raise
+
+def formatCCMServer(parser: namespace) -> str:
+    """
+    Format the target CCM server URI with the appropriate protocol.
+    """
+    serverName = ""
+    isProtoIncluded = False
+
+    # Check if a preceding `$protocol://` string is in the server name
+
+    # If yes; return name as is
+    if isProtoIncluded:
+        return parser.ccmServer
+
+    # Check if --no-ssl is set, adjust --uri-protocol as needed
+    if not parser.sslMode:
+        parser.uriProtocol = "http"
+
+    # Prepend --uri-protocol to the server name
+    serverName = parser.uriProtocol + "://" + parser.ccmServer
+    return serverName
 
 def serializeCSV(data: list) -> tuple[list, list]:
     """
@@ -333,6 +340,26 @@ def serializeCSV(data: list) -> tuple[list, list]:
         pprint(_deviceConfig[index]) if DEBUG_MODE else next
 
     return (_deviceConfig, _lineConfig)
+
+def handleImports(parser: namespace) -> None:
+    """
+    Choose how to import CucmAXL classes.
+    """
+    if parser.localLibImport:
+        from CucmAXL import CucmAXL
+    else:
+        global IMPORT_CucmAXL
+        global VERSION_CucmAXL
+        githubImport(*IMPORT_CucmAXL)
+        moduleFailVerCheck("CucmAXL", VERSION_CucmAXL)
+
+def handleDebugMode(parser: namespace) -> None:
+    """
+    Turn on verbose, or debug logging, if specified.
+    """
+    global VERBOSE_MODE, DEBUG_MODE
+    VERBOSE_MODE = True if parser.debug else parser.verbose
+    DEBUG_MODE = True if parser.debug else False
 
 def printVersion() -> None:
     """
@@ -501,6 +528,30 @@ def parseARGV() -> namespace:
         "default": "/axl/"
     }
 
+    localLibArgs = ('-l', '--local-lib')
+    localLibOpts = {
+        "help": "Import CucmAXL classes from local package, not github",
+        "dest": "localLibImport",
+        "default": False,
+        "action": "store_true"
+    }
+
+    uriProtoArgs = ('-u', '--uri-protocol')
+    uriProtoOps = {
+        "help": "Set the connection protocol to the CCM server"+
+            "as a custom option",
+        "dest": "uriProtocol",
+        "default": "https"
+    }
+
+    noSSLArgs = ('-n', '--no-ssl')
+    noSSLOpts = {
+        "help": "Connect to CCM server with HTTP instead of HTTPS",
+        "dest": "sslMode",
+        "default": True,
+        "action": "store_false"
+    }
+
     parser.add_argument(*sourceArgs, **sourceArgsOpts)
     parser.add_argument(*serverArgs, **serverArgsOpts)
     parser.add_argument(*wsdlArgs, **wsdlArgsOpts)
@@ -511,6 +562,9 @@ def parseARGV() -> namespace:
     parser.add_argument(*verboseArgs, **verboseArgsOpts)
     parser.add_argument(*portArgs, **portArgsOpts)
     parser.add_argument(*axlPathArgs, **axlPathOpts)
+    parser.add_argument(*localLibArgs, **localLibOpts)
+    parser.add_argument(*uriProtoArgs, **uriProtoOps)
+    parser.add_argument(*noSSLArgs, **noSSLOpts)
 
     return parser.parse_args(args=None if sys.argv[1:] else ['--help'])
 
@@ -524,10 +578,8 @@ def main() -> None:
     argv: namespace = parseARGV()
     handleInclusiveArgs(argv)
     printVersion() if argv.printVersion else next
-
-    global VERBOSE_MODE, DEBUG_MODE
-    VERBOSE_MODE = True if argv.debug else argv.verbose
-    DEBUG_MODE = True if argv.debug else False
+    handleDebugMode(argv)
+    handleImports(argv)
 
     print("[+] Reading CSV source.") if VERBOSE_MODE else next
     try:
@@ -571,7 +623,8 @@ def main() -> None:
         traceback.print_exc()
         sys.exit(1)
     
-    targetCCMServer = f"{argv.ccmServer}:{argv.port}{argv.servicePath}"
+    ccmServer = formatCCMServer(argv)
+    targetCCMServer = f"{ccmServer}:{argv.port}{argv.servicePath}"
     axlClientProfile = (
         argv.wsdlSource,
         argv.axlUser,
@@ -591,7 +644,7 @@ def main() -> None:
 
     try:
         print(
-            f"[+] Connecting to CallManager server {argv.ccmServer}..."
+            f"[+] Connecting to CallManager server {ccmServer}..."
         ) if VERBOSE_MODE else next
 
         CUCM = CucmAXL(*axlClientProfile)
