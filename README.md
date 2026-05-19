@@ -46,5 +46,7 @@ write up inbound
 
 ## Roadmap
 + Next: Make github imports default, but provide conditional import of local library with the `--local-lib` option.
-+ Second: Add an override column to CSV to update existing lines or phones if they already exist.  Force this on the entire list if the `--force-update` option is passed.
-+ Third: Write unit tests.
++ Second: Auto-insert "https://" to target server URI if not present, or alternately do "http://" if `--no-ssl` is passed.
++ Third: Set a custom URI protocol with `--uri-protocol`
++ Fourth: Add an override column to CSV to update existing lines or phones if they already exist.  Force this on the entire list if the `--force-update` option is passed.
++ Fifth: Write unit tests.
