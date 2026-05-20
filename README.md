@@ -11,7 +11,7 @@ library.*
 
 
 ## Versions
-Current version 0.1.1 -- Use this. 
+Current stable version 0.1.1 -- Use this. 
 
 Version 0.1.0-beta -- working, is the same as v0.1.1 (stable) but with some minor differences in the code base.
 
