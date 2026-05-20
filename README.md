@@ -3,11 +3,8 @@ Batch jobber to build a bunch of lines and phones in CUCM with a CSV file to mod
 
 
 ## Caveats
-As of the latest version, the script will pull the CucmAXL library from https://raw.github.com/casnix/stable/CucmAXL.py!
-This is not typically done, and may not pass scrunity of your security team.  If this is the case, grab that file and place it into the same directory as `buildphones.py`.  Comment out the blocks relating to github imports and module version checks.  Add
-`from CucmAXL import CucmAXL` to the top of the script.  *It is planned to add a CLI argument to force this behavior instead of 
-the live pull from github.  The live pull is for lightweight install with the ability to automatically load improvements to the
-library.*
+As of the latest version, the script will pull the CucmAXL library from https://raw.github.com/casnix/stable/CucmAXL.py.
+This is not a normal security practice, and may not pass scrunity of your security team.  If this is the case, grab that file and place it into the same directory as `buildphones.py`.  Comment out the blocks relating to github imports and module version checks.  Add `from CucmAXL import CucmAXL` to the top of the script.  *It is planned to add a CLI argument to force this behavior instead of the live pull from github.  The live pull is for lightweight install with the ability to automatically load improvements to the library.*
 
 
 ## Versions
