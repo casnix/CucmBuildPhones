@@ -10,7 +10,7 @@ This is not a normal security practice, and may not pass scrunity of your securi
 ## Versions
 Current stable version 0.1.1 -- Use this. 
 
-Version 0.1.0-beta -- working, is the same as v0.1.1 (stable) but with some minor differences in the code base.
+Version 0.1.0-beta -- working, is the same as v0.1.1 (stable) but with some minor differences in the code base.  Probably has bugs.
 
 Version 0.1.0-alpha -- may not work, is probably broken.  
 
