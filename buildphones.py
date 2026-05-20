@@ -1,3 +1,5 @@
+#! python3
+
 # buildphones.py
 # Copyright Matt Rienzo (C) 2026
 # Builds several phones in Cisco Unified Communications Manager (CUCM) based
