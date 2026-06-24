@@ -78,6 +78,20 @@ class _MODULE__buildphones():
 _MODULE__CucmAXL = classmethod
 CucmAXL = classmethod
 
+
+####################################################################
+### Module tuple block                                           ###
+####################################################################
+# Formatted this way with the tuple expansion for the purpose of ###
+# readability in the case of multiple remote imports.            ###
+####################################################################
+IMPORT_CucmAXL = ('casnix', 'CucmAXL', 'CucmAXL', 'master')
+
+####################################
+### Module minimum version block ###
+####################################
+VERSION_CucmAXL = (0, 1, 0, 0)
+
 # Import from github
 def githubImport(
         user: str,
@@ -162,19 +176,6 @@ def moduleFailVerCheck(
 
     return returnCode
 
-####################################################################
-### Module tuple block                                           ###
-####################################################################
-# Formatted this way with the tuple expansion for the purpose of ###
-# readability in the case of multiple remote imports.            ###
-####################################################################
-IMPORT_CucmAXL = ('casnix', 'CucmAXL', 'CucmAXL', 'master')
-
-####################################
-### Module minimum version block ###
-####################################
-VERSION_CucmAXL = (0, 1, 0, 0)
-
 # Suppress SSL warnings (use proper certs in production)
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -220,6 +221,7 @@ def addLines(ccm: CucmAXL, lines: list) -> None:
             ) if VERBOSE_MODE else next
             ccm.addLine(line = {**thisLine})
         except Exception as e:
+            print(str(e).lower()) if DEBUG_MODE else next
             if (
                 "already exists" in str(e).lower()
                 or "duplicate" in str(e).lower()
