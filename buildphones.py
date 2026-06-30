@@ -17,6 +17,7 @@ import namespace
 import traceback
 
 from pprint import pprint
+from zeep.helpers import serialize_object
 
 # Type hints to show reader intended use of variable
 mutable_bool = bool
@@ -321,14 +322,18 @@ def listPhonesByDN(ccm: CucmAXL, lines: list) -> None:
             ) if VERBOSE_MODE else next
 
             # Step 1: get the line and its associated device names.
-            lineResult = ccm.getLine(
-                pattern=pattern,
-                routePartitionName=partition,
-                returnedTags={
-                    'pattern': '',
-                    'routePartitionName': '',
-                    'associatedDevices': {'device': ['']}
-                }
+            # serialize_object() converts zeep CompoundValue to a plain dict
+            # so standard .get() calls work correctly.
+            lineResult = serialize_object(
+                ccm.getLine(
+                    pattern=pattern,
+                    routePartitionName=partition,
+                    returnedTags={
+                        'pattern': '',
+                        'routePartitionName': '',
+                        'associatedDevices': {'device': ['']}
+                    }
+                )
             )
 
             print(
@@ -356,9 +361,11 @@ def listPhonesByDN(ccm: CucmAXL, lines: list) -> None:
                         f"[D] listPhonesByDN() - getPhone({deviceName})"
                     ) if DEBUG_MODE else next
 
-                    phoneResult = ccm.getPhone(
-                        name=deviceName,
-                        returnedTags={'name': '', 'product': ''}
+                    phoneResult = serialize_object(
+                        ccm.getPhone(
+                            name=deviceName,
+                            returnedTags={'name': '', 'product': ''}
+                        )
                     )
 
                     phoneData = (
