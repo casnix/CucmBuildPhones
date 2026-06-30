@@ -179,9 +179,15 @@ def moduleFailVerCheck(
 # Suppress SSL warnings (use proper certs in production)
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-def addPhones(ccm: CucmAXL, phones: list) -> None:
+def addPhones(
+        ccm: CucmAXL,
+        phones: list,
+        updateExisting: bool = False
+    ) -> None:
     """
-    Iterate through `phones` and add a phone per each to CUCM.
+    Iterate through `phones` and add a phone per each to CUCM. If
+    `updateExisting` is True, phones that already exist will be updated
+    in place (via updatePhone) instead of being skipped.
     """
     def printOut(thisPhone: dict) -> None:
         print("[D] addPhones() -- current value of dict: thisPhone:")
@@ -196,16 +202,39 @@ def addPhones(ccm: CucmAXL, phones: list) -> None:
             ccm.addPhone(phone={**thisPhone})
         except Exception as e:
             if "duplicate value" in str(e).lower():
-                print(
-                    f"[~] Phone {thisPhone["name"]} already exists, skipping."
-                )
+                if updateExisting:
+                    print(
+                        f"[~] Phone {thisPhone['name']} already exists, "+
+                          "updating it."
+                    )
+                    try:
+                        updatePhone = {**thisPhone}
+                        name = updatePhone.pop("name")
+                        ccm.updatePhone(name=name, **updatePhone)
+                    except Exception as updateErr:
+                        print(
+                            f"[x] Failed to update phone {thisPhone['name']}."
+                        )
+                        print(f"[~] Exception: {str(updateErr)}")
+                        raise
+                else:
+                    print(
+                        f"[~] Phone {thisPhone["name"]} already exists, "+
+                          "skipping."
+                    )
                 next
             else:
                 raise
     
-def addLines(ccm: CucmAXL, lines: list) -> None:
+def addLines(
+        ccm: CucmAXL,
+        lines: list,
+        updateExisting: bool = False
+    ) -> None:
     """
-    Iterate through `lines` and add a line per each to CUCM.
+    Iterate through `lines` and add a line per each to CUCM. If
+    `updateExisting` is True, lines that already exist will be updated
+    in place (via updateLine) instead of just being reused as-is.
     """
 
     def printOut(thisLine: dict) -> None:
@@ -227,10 +256,33 @@ def addLines(ccm: CucmAXL, lines: list) -> None:
                 or "duplicate" in str(e).lower()
                 or "A DN exists"
             ):
-                print(
-                    f"[~] DN {thisLine['pattern']} already exists, "+
-                      "will reuse it"
-                )
+                if updateExisting:
+                    print(
+                        f"[~] DN {thisLine['pattern']} already exists, "+
+                          "updating it."
+                    )
+                    try:
+                        updateLine = {**thisLine}
+                        pattern = updateLine.pop("pattern")
+                        routePartitionName = updateLine.pop(
+                            "routePartitionName"
+                        )
+                        ccm.updateLine(
+                            pattern=pattern,
+                            routePartitionName=routePartitionName,
+                            **updateLine
+                        )
+                    except Exception as updateErr:
+                        print(
+                            f"[x] Failed to update DN {thisLine['pattern']}."
+                        )
+                        print(f"[~] Exception: {str(updateErr)}")
+                        raise
+                else:
+                    print(
+                        f"[~] DN {thisLine['pattern']} already exists, "+
+                          "will reuse it"
+                    )
             else:
                 raise
 
@@ -556,6 +608,15 @@ def parseARGV() -> namespace:
         "action": "store_false"
     }
 
+    updateExistingArgs = ('-e', '--update-existing')
+    updateExistingOpts = {
+        "help": "Update phones and lines that already exist instead of "+
+            "skipping them",
+        "dest": "updateExisting",
+        "default": False,
+        "action": "store_true"
+    }
+
     parser.add_argument(*sourceArgs, **sourceArgsOpts)
     parser.add_argument(*serverArgs, **serverArgsOpts)
     parser.add_argument(*wsdlArgs, **wsdlArgsOpts)
@@ -569,6 +630,7 @@ def parseARGV() -> namespace:
     parser.add_argument(*localLibArgs, **localLibOpts)
     parser.add_argument(*uriProtoArgs, **uriProtoOps)
     parser.add_argument(*noSSLArgs, **noSSLOpts)
+    parser.add_argument(*updateExistingArgs, **updateExistingOpts)
 
     return parser.parse_args(args=None if sys.argv[1:] else ['--help'])
 
@@ -660,7 +722,7 @@ def main() -> None:
 
     try:
         print("[+] Adding lines...") if VERBOSE_MODE else next
-        addLines(CUCM, lineConfigs)
+        addLines(CUCM, lineConfigs, argv.updateExisting)
     except Exception as e:
         print(f"[x] Failed to add lines")
         print(f"[~] Exception: {str(e)}")
@@ -669,7 +731,7 @@ def main() -> None:
     
     try:
         print("[+] Adding phones...") if VERBOSE_MODE else next
-        addPhones(CUCM, phoneConfigs)
+        addPhones(CUCM, phoneConfigs, argv.updateExisting)
     except Exception as e:
         print(f"[x] Failed to add phones")
         print(f"[~] Exception: {str(e)}")
