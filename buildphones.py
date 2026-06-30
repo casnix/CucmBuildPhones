@@ -348,6 +348,12 @@ def listPhonesByDN(ccm: CucmAXL, lines: list) -> None:
                 (lineData.get('associatedDevices') or {}).get('device') or []
             )
 
+            # Zeep unwraps single-element lists to a bare scalar after
+            # serialize_object(), so guard against iterating over a string
+            # character-by-character.
+            if isinstance(assocDevices, str):
+                assocDevices = [assocDevices]
+
             if not assocDevices:
                 print(f"{pattern:<20} {'(no phones found)':<20}")
                 continue
