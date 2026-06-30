@@ -219,6 +219,11 @@ def addPhones(
                             "protocol", "protocolSide"
                         ):
                             updatePhone.pop(addOnlyField, None)
+                        # 'lines' is a full replacement on updatePhone —
+                        # passing it would wipe any lines beyond index 1.
+                        # Line updates are handled separately by addLines(),
+                        # so drop the field here entirely.
+                        updatePhone.pop("lines", None)
                         ccm.updatePhone(name=name, **updatePhone)
                     except Exception as updateErr:
                         print(
