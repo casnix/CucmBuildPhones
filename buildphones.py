@@ -300,83 +300,82 @@ def listPhonesByDN(ccm: CucmAXL, lines: list) -> None:
     """
     For each DN in `lines`, query CUCM for phones that have that DN
     assigned and print the phone name and product model to stdout.
-    Uses listPhone with a dirn search so only one API call is made per
-    DN rather than fetching every phone on the cluster.
+
+    Strategy:
+        1) getLine(pattern, routePartitionName) -- returns associatedDevices,
+           a list of SEP-style device names registered to that DN.
+        2) getPhone(name) for each device -- returns the product/model field.
+
+    listPhone searchCriteria does not support filtering by dirn, so the
+    two-step approach is necessary.
     """
     print(f"{'DN':<20} {'Phone Name':<20} {'Model'}")
     print("-" * 60)
 
     for thisLine in lines:
-        pattern = thisLine['pattern']
-        partition = thisLine.get('routePartitionName', '')
+        pattern   = thisLine['pattern']
+        partition = thisLine.get('routePartitionName', '') or ''
         try:
             print(
                 f"[listPhonesByDN()] Querying DN {pattern}."
             ) if VERBOSE_MODE else next
 
-            result = ccm.listPhone(
-                searchCriteria={'dirn': pattern},
+            # Step 1: get the line and its associated device names.
+            lineResult = ccm.getLine(
+                pattern=pattern,
+                routePartitionName=partition,
                 returnedTags={
-                    'name': '',
-                    'product': '',
-                    'lines': {
-                        'line': [
-                            {
-                                'dirn': {
-                                    'pattern': '',
-                                    'routePartitionName': ''
-                                }
-                            }
-                        ]
-                    }
+                    'pattern': '',
+                    'routePartitionName': '',
+                    'associatedDevices': {'device': ['']}
                 }
             )
 
-            phones = (
-                result.get('return', {}) or {}
-            ).get('phone', []) or []
-
             print(
-                f"[D] listPhonesByDN() - raw result for {pattern}:"
+                f"[D] listPhonesByDN() - getLine result for {pattern}:"
             ) if DEBUG_MODE else next
-            pprint(result) if DEBUG_MODE else next
+            pprint(lineResult) if DEBUG_MODE else next
 
-            if not phones:
+            lineData = (
+                (lineResult.get('return') or {}).get('line') or {}
+            )
+            assocDevices = (
+                (lineData.get('associatedDevices') or {}).get('device') or []
+            )
+
+            if not assocDevices:
                 print(f"{pattern:<20} {'(no phones found)':<20}")
                 continue
 
-            # A DN can appear on multiple phones; print one row each.
-            # Filter to only phones where the DN is in the right partition
-            # so a shared DN pattern in another partition doesn't pollute
-            # the results.
-            for phone in phones:
-                phoneName = phone.get('name', '(unknown)')
-                product   = phone.get('product', '(unknown)')
-
-                # Confirm the line on this phone actually matches the
-                # partition we care about (listPhone dirn search matches
-                # pattern only, not partition).
-                lines_on_phone = (
-                    (phone.get('lines') or {}).get('line') or []
-                )
-                matchesPartition = any(
-                    (
-                        (l.get('dirn') or {}).get('routePartitionName')
-                        or ''
-                    ) == partition
-                    for l in lines_on_phone
-                )
-
-                # If partition is blank/None we skip the partition check
-                if partition and not matchesPartition:
+            # Step 2: for each device name, fetch the phone to get the model.
+            # A DN can be assigned to multiple phones (shared line), so we
+            # print one row per device.
+            for deviceName in assocDevices:
+                try:
                     print(
-                        f"[D] listPhonesByDN() - {phoneName} has "
-                        f"{pattern} but not in partition "
-                        f"'{partition}', skipping."
+                        f"[D] listPhonesByDN() - getPhone({deviceName})"
                     ) if DEBUG_MODE else next
-                    continue
 
-                print(f"{pattern:<20} {phoneName:<20} {product}")
+                    phoneResult = ccm.getPhone(
+                        name=deviceName,
+                        returnedTags={'name': '', 'product': ''}
+                    )
+
+                    phoneData = (
+                        (phoneResult.get('return') or {}).get('phone') or {}
+                    )
+                    product = phoneData.get('product') or '(unknown)'
+
+                    print(f"{pattern:<20} {deviceName:<20} {product}")
+
+                except Exception as phoneErr:
+                    print(
+                        f"{pattern:<20} {deviceName:<20} "
+                        f"(lookup failed: {type(phoneErr).__name__})"
+                    )
+                    print(
+                        f"[D] listPhonesByDN() - getPhone error: {phoneErr}"
+                    ) if DEBUG_MODE else next
 
         except Exception as e:
             print(
