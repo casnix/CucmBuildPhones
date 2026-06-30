@@ -313,7 +313,17 @@ def listPhonesByDN(ccm: CucmAXL, lines: list) -> None:
     print(f"{'DN':<20} {'Phone Name':<20} {'Model'}")
     print("-" * 60)
 
-    for thisLine in lines:
+    # Deduplicate by (pattern, partition) so shared-line DNs that appear
+    # on multiple CSV rows are only queried once.
+    seen = set()
+    uniqueLines = []
+    for l in lines:
+        key = (l['pattern'], l.get('routePartitionName', '') or '')
+        if key not in seen:
+            seen.add(key)
+            uniqueLines.append(l)
+
+    for thisLine in uniqueLines:
         pattern   = thisLine['pattern']
         partition = thisLine.get('routePartitionName', '') or ''
         try:
@@ -348,10 +358,13 @@ def listPhonesByDN(ccm: CucmAXL, lines: list) -> None:
                 (lineData.get('associatedDevices') or {}).get('device') or []
             )
 
-            # Zeep unwraps single-element lists to a bare scalar after
-            # serialize_object(), so guard against iterating over a string
-            # character-by-character.
-            if isinstance(assocDevices, str):
+            # Normalize assocDevices to a plain Python list.
+            # serialize_object() may return a bare string, an OrderedDict,
+            # or another zeep scalar when the XML contained only one
+            # <device> element (zeep unwraps single-element sequences).
+            # Iterating over a bare string gives individual characters,
+            # causing the infinite-repeat bug, so we always force a list.
+            if assocDevices and not isinstance(assocDevices, list):
                 assocDevices = [assocDevices]
 
             if not assocDevices:
