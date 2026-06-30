@@ -296,6 +296,95 @@ def addLines(
             else:
                 raise
 
+def listPhonesByDN(ccm: CucmAXL, lines: list) -> None:
+    """
+    For each DN in `lines`, query CUCM for phones that have that DN
+    assigned and print the phone name and product model to stdout.
+    Uses listPhone with a dirn search so only one API call is made per
+    DN rather than fetching every phone on the cluster.
+    """
+    print(f"{'DN':<20} {'Phone Name':<20} {'Model'}")
+    print("-" * 60)
+
+    for thisLine in lines:
+        pattern = thisLine['pattern']
+        partition = thisLine.get('routePartitionName', '')
+        try:
+            print(
+                f"[listPhonesByDN()] Querying DN {pattern}."
+            ) if VERBOSE_MODE else next
+
+            result = ccm.listPhone(
+                searchCriteria={'dirn': pattern},
+                returnedTags={
+                    'name': '',
+                    'product': '',
+                    'lines': {
+                        'line': [
+                            {
+                                'dirn': {
+                                    'pattern': '',
+                                    'routePartitionName': ''
+                                }
+                            }
+                        ]
+                    }
+                }
+            )
+
+            phones = (
+                result.get('return', {}) or {}
+            ).get('phone', []) or []
+
+            print(
+                f"[D] listPhonesByDN() - raw result for {pattern}:"
+            ) if DEBUG_MODE else next
+            pprint(result) if DEBUG_MODE else next
+
+            if not phones:
+                print(f"{pattern:<20} {'(no phones found)':<20}")
+                continue
+
+            # A DN can appear on multiple phones; print one row each.
+            # Filter to only phones where the DN is in the right partition
+            # so a shared DN pattern in another partition doesn't pollute
+            # the results.
+            for phone in phones:
+                phoneName = phone.get('name', '(unknown)')
+                product   = phone.get('product', '(unknown)')
+
+                # Confirm the line on this phone actually matches the
+                # partition we care about (listPhone dirn search matches
+                # pattern only, not partition).
+                lines_on_phone = (
+                    (phone.get('lines') or {}).get('line') or []
+                )
+                matchesPartition = any(
+                    (
+                        (l.get('dirn') or {}).get('routePartitionName')
+                        or ''
+                    ) == partition
+                    for l in lines_on_phone
+                )
+
+                # If partition is blank/None we skip the partition check
+                if partition and not matchesPartition:
+                    print(
+                        f"[D] listPhonesByDN() - {phoneName} has "
+                        f"{pattern} but not in partition "
+                        f"'{partition}', skipping."
+                    ) if DEBUG_MODE else next
+                    continue
+
+                print(f"{pattern:<20} {phoneName:<20} {product}")
+
+        except Exception as e:
+            print(
+                f"[x] Failed to query DN {pattern}."
+            )
+            print(f"[~] Exception: {str(e)}")
+            raise
+
 def formatCCMServer(parser: namespace) -> str:
     """
     Format the target CCM server URI with the appropriate protocol.
@@ -642,6 +731,17 @@ def parseARGV() -> namespace:
     parser.add_argument(*noSSLArgs, **noSSLOpts)
     parser.add_argument(*updateExistingArgs, **updateExistingOpts)
 
+    listPhonesArgs = ('-L', '--list-phones')
+    listPhonesOpts = {
+        "help": "Look up phones assigned to each DN in the CSV and "
+                "print phone name and model to stdout. "
+                "Does not add or modify any devices.",
+        "dest": "listPhones",
+        "default": False,
+        "action": "store_true"
+    }
+    parser.add_argument(*listPhonesArgs, **listPhonesOpts)
+
     return parser.parse_args(args=None if sys.argv[1:] else ['--help'])
 
 def main() -> None:
@@ -729,6 +829,19 @@ def main() -> None:
         print(f"[~] Exception: {str(e)}")
         traceback.print_exc()
         sys.exit(1)
+
+    if argv.listPhones:
+        try:
+            print(
+                "[+] Looking up phones by DN..."
+            ) if VERBOSE_MODE else next
+            listPhonesByDN(CUCM, lineConfigs)
+        except Exception as e:
+            print(f"[x] Failed to list phones by DN")
+            print(f"[~] Exception: {str(e)}")
+            traceback.print_exc()
+            sys.exit(1)
+        sys.exit(0)
 
     try:
         print("[+] Adding lines...") if VERBOSE_MODE else next
