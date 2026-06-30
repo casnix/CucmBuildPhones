@@ -210,6 +210,14 @@ def addPhones(
                     try:
                         updatePhone = {**thisPhone}
                         name = updatePhone.pop("name")
+                        # These fields are set at creation and are not
+                        # accepted by UpdatePhoneReq — they identify the
+                        # device type and cannot be changed via AXL.
+                        for addOnlyField in (
+                            "product", "model", "class",
+                            "protocol", "protocolSide"
+                        ):
+                            updatePhone.pop(addOnlyField, None)
                         ccm.updatePhone(name=name, **updatePhone)
                     except Exception as updateErr:
                         print(
