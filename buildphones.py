@@ -267,6 +267,8 @@ def addLines(
                         routePartitionName = updateLine.pop(
                             "routePartitionName"
                         )
+                        # 'usage' is only accepted by addLine, not updateLine
+                        updateLine.pop("usage", None)
                         ccm.updateLine(
                             pattern=pattern,
                             routePartitionName=routePartitionName,
